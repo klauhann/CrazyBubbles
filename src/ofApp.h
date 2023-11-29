@@ -5,6 +5,7 @@
 #include "ofxKinect.h"
 
 #include <vector>
+#include <cmath>
 
 class Circle {
 public:
@@ -41,6 +42,7 @@ public:
     void updateContours();
     void drawCircles();
     std::vector<float> findBlobs(int i);
+    bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
 
     //fonts
     ofTrueTypeFont font;

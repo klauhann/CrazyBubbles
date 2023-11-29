@@ -33,7 +33,7 @@ void ofApp::setup() {
     grayThreshFar.allocate(kinect.width, kinect.height);
     
     nearThreshold = 205;
-    farThreshold = 170;
+    farThreshold = 180;
     bThreshWithOpenCV = true;
     
     ofSetFrameRate(60);
@@ -158,7 +158,7 @@ void ofApp::updateContours() {
                 float xEndCircle = circle.x + circle.radius;
                 float yEndCircle = circle.y + circle.radius;
 
-                if (coordinates.at(0) <= xEndCircle && coordinates.at(0) >= xStartCircle && coordinates.at(1) <= yEndCircle && coordinates.at(1) >= yStartCircle) {
+                if (isPointInCircle(coordinates.at(0), coordinates.at(1), circle.x, circle.y, circle.radius)) {
                     circle.currentAmount++;
                     if (circle.expectedAmount == circle.currentAmount) {
                         //circles.erase(std::find(circles.begin(), circles.end(), circle)); //??
@@ -168,6 +168,12 @@ void ofApp::updateContours() {
         }
     }
 }
+
+bool ofApp::isPointInCircle(double x, double y, double x_center, double y_center, double radius) {
+    double distance = sqrt(pow(x - x_center, 2) + pow(y - y_center, 2));
+    return distance <= radius;
+}
+
 
 void ofApp::updateKinect() {
     kinect.update();
@@ -261,8 +267,8 @@ void ofApp::updateCircles() {
 }
 
 std::vector<float> ofApp::findBlobs(int i) {
-    float minBlobSize = 200;
-    float maxBlobSize = 200000.0;
+    float minBlobSize = 800;
+    float maxBlobSize = 20000.0;
 
     // Loop through all contours found
     // Get the current contour
@@ -324,7 +330,10 @@ void ofApp::draw() {
         kinect2.draw(420, 320, 400, 300);
 #endif
     }
-    
+
+    for ( Circle& circle : circles) {
+        circle.currentAmount = 0;
+    }
 }
 
 void ofApp::drawPointCloud() {
@@ -359,7 +368,8 @@ void ofApp::drawCircles() {
 
         ofSetColor(0);
         font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
-       // font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
+        font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
+
     }
 }
 
