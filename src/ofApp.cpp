@@ -6,53 +6,60 @@
 float blobX;
 float blobY;
 int amountCorrect = 0;
-const int amountOfCircles = 4;
+const int amountOfPlayer = 4;
 int frame = 0;
-int timer = 10;
-std::chrono::seconds duration(10);
+std::chrono::seconds duration(7);
 auto start_time = std::chrono::steady_clock::now();
+int score = 0;
+bool newRound = true;
+int numberOfPeople;
+int amountOfCircles = 0;
+int rounds = 1;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
     ofSetLogLevel(OF_LOG_VERBOSE);
-    
+
     // enable depth->video image calibration
     kinect.setRegistration(true);
-    
+
     kinect.init();
 
-    
+
     kinect.open();
 
-    
+
     // print the intrinsic IR sensor values
-    if(kinect.isConnected()) {
+    if (kinect.isConnected()) {
         ofLogNotice() << "sensor-emitter dist: " << kinect.getSensorEmitterDistance() << "cm";
         ofLogNotice() << "sensor-camera dist:  " << kinect.getSensorCameraDistance() << "cm";
         ofLogNotice() << "zero plane pixel size: " << kinect.getZeroPlanePixelSize() << "mm";
         ofLogNotice() << "zero plane dist: " << kinect.getZeroPlaneDistance() << "mm";
     }
-    
+
     colorImg.allocate(kinect.width, kinect.height);
     grayImage.allocate(kinect.width, kinect.height);
     grayThreshNear.allocate(kinect.width, kinect.height);
     grayThreshFar.allocate(kinect.width, kinect.height);
-    
+
     nearThreshold = 205;
     farThreshold = 175;
     bThreshWithOpenCV = true;
-    
+
     ofSetFrameRate(60);
-    
+
     // zero the tilt on startup
     angle = 0;
     kinect.setCameraTiltAngle(angle);
-    
+
     // start from the front
     bDrawPointCloud = false;
-    
+
     font.load("impact.ttf", 50);
+    headerFont.load("impact.ttf", 100);
     ofSeedRandom();
+
+    numberOfPeople = amountOfPlayer;
 }
 
 //--------------------------------------------------------------
@@ -136,45 +143,38 @@ void ofApp::updateKinect() {
 }
 
 void ofApp::updateCircles() {
-    float new_radius = ofRandom(250, 300);
-    float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
-    float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
-    ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+    if (newRound) {
+        newRound = false;
+        while (numberOfPeople > 0) {
+            int thisCircle = ofRandom(1, numberOfPeople + 1);
+            float new_radius = ofRandom(150 + 100 * thisCircle, 200 + 100 * thisCircle);
+            float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
+            float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
+            ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
 
-    bool overlaps = false;
+            bool overlaps = false;
 
-    for (const Circle& circle : circles) {
+            for (const Circle& circle : circles) {
 
-        float distance = ofDist(new_x, new_y, circle.x, circle.y);
+                float distance = ofDist(new_x, new_y, circle.x, circle.y);
 
 
-        if (distance < new_radius + circle.radius + 20) {
-            overlaps = true;
-            break;
+                if (distance < new_radius + circle.radius + 20) {
+                    overlaps = true;
+                    break;
+                }
+            }
+            //int numberOfPeople = 1;
+            if (!overlaps) {
+                numberOfPeople -= thisCircle;
+
+                circles.push_back(Circle(new_x, new_y, new_radius, randomColor, thisCircle));
+                start_time = std::chrono::steady_clock::now();
+                amountOfCircles++;
+            }
         }
     }
-    int numberOfPeople = 1;
-    if (!overlaps && circles.size() < amountOfCircles) {
-        if (new_radius >= 250 && new_radius < 300) {
-            numberOfPeople = 1;
-        }
-        else if (new_radius >= 300 && new_radius < 350) {
-            //numberOfPeople = 2;
-        }
-        else if (new_radius >= 350 && new_radius < 400) {
-            //numberOfPeople = 3;
-        }
-        else if (new_radius >= 400 && new_radius < 450) {
-            // numberOfPeople = 4;
-        }
-        else if (new_radius >= 450 && new_radius <= 500) {
-            //numberOfPeople = 5;
-        }
 
-        circles.push_back(Circle(new_x, new_y, new_radius, randomColor, numberOfPeople));
-        start_time = std::chrono::steady_clock::now();
-    }
-    
 
 }
 
@@ -205,71 +205,92 @@ std::vector<float> ofApp::findBlobs(int i) {
         std::vector<float> coordinates = { -1, -1 };
         return coordinates;
     }
-    
+
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-
-    auto current_time = std::chrono::steady_clock::now();
-    auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
-
-    if (amountCorrect == amountOfCircles) {
-        ofColor col;
-        col.set(0, 255, 0);
-        ofClear(col);
-        ofBackground(0, 255, 0);
-        frame = ofGetFrameNum();
-        circles.clear();
-    }
-    else if (ofGetFrameNum() == frame + 1) {
-
+    if (rounds > 10) {
         ofSleepMillis(2000);
-    }
-    else if (elapsed_time >= duration.count()) {
-        frame = ofGetFrameNum();
+        newRound = false;
         circles.clear();
-        ofBackground(255,0,0);
-    } 
-    else {
-        ofBackground(0, 0, 0);
+        ofBackground(0, 0, 100);
+        headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
+
     }
+    else {
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
-    ofApp::drawCircles();
-
-    ofSetColor(255, 255, 255);
-    font.drawString(ofToString(duration.count() - elapsed_time), ofGetWidth() - 200, 100);
-
-    for (int i = 0; i < contourFinder.nBlobs; i++) {
-        vector<float> blobCoordinates = ofApp::findBlobs(i);
-
-        if (blobCoordinates.at(0) >= 0) {
-            ofColor white(255, 255, 255);
-            ofSetColor(white);
-            ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
+        if (amountCorrect == amountOfCircles && amountOfCircles != 0) {
+            score += 10 * (duration.count() - elapsed_time);
+            ofColor col;
+            col.set(0, 255, 0);
+            ofClear(col);
+            ofBackground(0, 255, 0);
+            frame = ofGetFrameNum();
+            circles.clear();
+            newRound = true;
+            numberOfPeople = amountOfPlayer;
+            amountOfCircles = 0;
+            rounds++;
         }
-    }
+        else if (ofGetFrameNum() == frame + 1) {
+            ofSleepMillis(2000);
 
-    ofSetColor(255, 255, 255);
+        }
+        else if (elapsed_time >= duration.count()) {
+            frame = ofGetFrameNum();
+            circles.clear();
+            ofBackground(255, 0, 0);
+            newRound = true;
+            numberOfPeople = amountOfPlayer;
+            amountOfCircles = 0;
+            rounds++;
+        }
+        else {
+            ofBackground(0, 0, 0);
+        }
 
-    if (bDrawPointCloud) {
-        easyCam.begin();
-        drawPointCloud();
-        easyCam.end();
-    }
-    else {
-        // draw from the live kinect
-        kinect.drawDepth(10, 10, 400, 300);
-        kinect.draw(420, 10, 400, 300);
 
-        grayImage.draw(10, 320, 400, 300);
-        contourFinder.draw(10, 320, 400, 300);
-    }
+        ofApp::drawCircles();
 
-    for ( Circle& circle : circles) {
-        circle.currentAmount = 0;
+        ofSetColor(255, 255, 255);
+        font.drawString("Time: " + ofToString(duration.count() - elapsed_time), ofGetWidth() - 300, 100);
+        font.drawString("Score: " + ofToString(score), ofGetWidth() - 300, 200);
+        font.drawString("Round: " + ofToString(rounds), ofGetWidth() - 300, 300);
+
+        for (int i = 0; i < contourFinder.nBlobs; i++) {
+            vector<float> blobCoordinates = ofApp::findBlobs(i);
+
+            if (blobCoordinates.at(0) >= 0) {
+                ofColor white(255, 255, 255);
+                ofSetColor(white);
+                ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
+            }
+        }
+
+        ofSetColor(255, 255, 255);
+
+        if (bDrawPointCloud) {
+            easyCam.begin();
+            drawPointCloud();
+            easyCam.end();
+        }
+        else {
+            // draw from the live kinect
+            kinect.drawDepth(10, 10, 400, 300);
+            kinect.draw(420, 10, 400, 300);
+
+            grayImage.draw(10, 320, 400, 300);
+            contourFinder.draw(10, 320, 400, 300);
+        }
+
+        for (Circle& circle : circles) {
+            circle.currentAmount = 0;
+        }
+        amountCorrect = 0;
     }
-    amountCorrect = 0;
 }
 
 void ofApp::drawPointCloud() {
@@ -283,9 +304,9 @@ void ofApp::drawPointCloud() {
             if (kinect.getDistanceAt(x, y) > 0) {
                 mesh.addColor(kinect.getColorAt(x, y));
                 mesh.addVertex(kinect.getWorldCoordinateAt(x, y));
+            }
         }
     }
-}
     glPointSize(3);
     ofPushMatrix();
     // the projected points are 'upside down' and 'backwards' 
@@ -318,14 +339,14 @@ void ofApp::exit() {
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed (int key) {
-    
+void ofApp::keyPressed(int key) {
+
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button)
 {
-    
+
 }
 
 //--------------------------------------------------------------
@@ -341,12 +362,12 @@ void ofApp::mouseReleased(int x, int y, int button)
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y){
+void ofApp::mouseEntered(int x, int y) {
 
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y){
+void ofApp::mouseExited(int x, int y) {
 
 }
 
