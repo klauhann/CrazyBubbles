@@ -5,6 +5,12 @@
 
 float blobX;
 float blobY;
+int amountCorrect = 0;
+const int amountOfCircles = 4;
+int frame = 0;
+int timer = 10;
+std::chrono::seconds duration(10);
+auto start_time = std::chrono::steady_clock::now();
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -33,7 +39,7 @@ void ofApp::setup() {
     grayThreshFar.allocate(kinect.width, kinect.height);
     
     nearThreshold = 205;
-    farThreshold = 180;
+    farThreshold = 175;
     bThreshWithOpenCV = true;
     
     ofSetFrameRate(60);
@@ -54,96 +60,6 @@ void ofApp::update() {
     ofApp::updateCircles();
     ofApp::updateKinect();
     ofApp::updateContours();
-
-    /*
-    kinect.update();
-    
-    // there is a new frame and we are connected
-    if(kinect.isFrameNew()) {
-        
-        // load grayscale depth image from the kinect source
-        grayImage.setFromPixels(kinect.getDepthPixels());
-        
-        // we do two thresholds - one for the far plane and one for the near plane
-        // we then do a cvAnd to get the pixels which are a union of the two thresholds
-        if(bThreshWithOpenCV) {
-            grayThreshNear = grayImage;
-            grayThreshFar = grayImage;
-            grayThreshNear.threshold(nearThreshold, true);
-            grayThreshFar.threshold(farThreshold);
-            cvAnd(grayThreshNear.getCvImage(), grayThreshFar.getCvImage(), grayImage.getCvImage(), NULL);
-        } else {
-            
-            // or we do it ourselves - show people how they can work with the pixels
-            ofPixels & pix = grayImage.getPixels();
-            int numPixels = pix.size();
-            for(int i = 0; i < numPixels; i++) {
-                if(pix[i] < nearThreshold && pix[i] > farThreshold) {
-                    pix[i] = 255;
-                } else {
-                    pix[i] = 0;
-                }
-            }
-        }
-        
-        // update the cv images
-        grayImage.flagImageChanged();
-        
-        // find contours which are between the size of 20 pixels and 1/3 the w*h pixels.
-        // also, find holes is set to true so we will get interior contours as well....
-        contourFinder.findContours(grayImage, 10, (kinect.width*kinect.height)/2, 20, false);
-
-     } 
-        
-        for (int i = 0; i < contourFinder.nBlobs; i++) {
-            // Get the current contour
-            ofxCvBlob blob = contourFinder.blobs[i];
-
-            // Get centroid
-            ofPoint centroid = blob.centroid;
-            cout << "Contour " << i << " Centroid: " << centroid << endl;
-
-            // Get bounding box
-            ofRectangle boundingBox = blob.boundingRect;
-            cout << "Contour " << i << " Bounding Box: " << boundingBox << endl;
-        }
-    
-    
-    
-    //draw circles
-    if(ofGetFrameNum()%60 == 0){
-        float new_radius = ofRandom(50, 250);
-        float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
-        float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
-        ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
-        
-        bool overlaps = false;
-        
-        for (const Circle& circle : circles) {
-                    
-            float distance = ofDist(new_x, new_y, circle.x, circle.y);
-            
-            if (distance < new_radius + circle.radius + 20) {
-                overlaps = true;
-                break;
-            }
-        }
-        
-        if(!overlaps && circles.size() < 3){
-            
-            circles.push_back(Circle(new_x, new_y, new_radius, randomColor));
-            
-        }else if(circles.size() >= 3){
-            
-            circles.clear();
-            ofClear(255);
-            
-            
-        }
-    }
-    */
-    
-        
 }
 
 void ofApp::updateContours() {
@@ -161,7 +77,7 @@ void ofApp::updateContours() {
                 if (isPointInCircle(coordinates.at(0), coordinates.at(1), circle.x, circle.y, circle.radius)) {
                     circle.currentAmount++;
                     if (circle.expectedAmount == circle.currentAmount) {
-                        //circles.erase(std::find(circles.begin(), circles.end(), circle)); //??
+                        amountCorrect++;
                     }
                 }
             }
@@ -220,49 +136,45 @@ void ofApp::updateKinect() {
 }
 
 void ofApp::updateCircles() {
-    if (ofGetFrameNum() % 200 == 0) {
-        float new_radius = ofRandom(250, 500);
-        float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
-        float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
-        ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+    float new_radius = ofRandom(250, 300);
+    float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
+    float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
+    ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
 
-        bool overlaps = false;
+    bool overlaps = false;
 
-        for (const Circle& circle : circles) {
+    for (const Circle& circle : circles) {
 
-            float distance = ofDist(new_x, new_y, circle.x, circle.y);
+        float distance = ofDist(new_x, new_y, circle.x, circle.y);
 
 
-            if (distance < new_radius + circle.radius + 20) {
-                overlaps = true;
-                break;
-            }
-        }
-        int numberOfPeople = 1;
-        if (!overlaps && circles.size() < 3) {
-            if (new_radius >= 250 && new_radius < 300) {
-                numberOfPeople = 1;
-            }
-            else if (new_radius >= 300 && new_radius < 350) {
-                numberOfPeople = 2;
-            }
-            else if (new_radius >= 350 && new_radius < 400) {
-                numberOfPeople = 3;
-            }
-            else if (new_radius >= 400 && new_radius < 450) {
-                numberOfPeople = 4;
-            }
-            else if (new_radius >= 450 && new_radius <= 500) {
-                numberOfPeople = 5;
-            }
-
-            circles.push_back(Circle(new_x, new_y, new_radius, randomColor, numberOfPeople));
-        }
-        else if (circles.size() >= 3) {
-            circles.clear();
-            ofClear(255);
+        if (distance < new_radius + circle.radius + 20) {
+            overlaps = true;
+            break;
         }
     }
+    int numberOfPeople = 1;
+    if (!overlaps && circles.size() < amountOfCircles) {
+        if (new_radius >= 250 && new_radius < 300) {
+            numberOfPeople = 1;
+        }
+        else if (new_radius >= 300 && new_radius < 350) {
+            //numberOfPeople = 2;
+        }
+        else if (new_radius >= 350 && new_radius < 400) {
+            //numberOfPeople = 3;
+        }
+        else if (new_radius >= 400 && new_radius < 450) {
+            // numberOfPeople = 4;
+        }
+        else if (new_radius >= 450 && new_radius <= 500) {
+            //numberOfPeople = 5;
+        }
+
+        circles.push_back(Circle(new_x, new_y, new_radius, randomColor, numberOfPeople));
+        start_time = std::chrono::steady_clock::now();
+    }
+    
 
 }
 
@@ -298,8 +210,35 @@ std::vector<float> ofApp::findBlobs(int i) {
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-    
+
+    auto current_time = std::chrono::steady_clock::now();
+    auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+    if (amountCorrect == amountOfCircles) {
+        ofColor col;
+        col.set(0, 255, 0);
+        ofClear(col);
+        ofBackground(0, 255, 0);
+        frame = ofGetFrameNum();
+        circles.clear();
+    }
+    else if (ofGetFrameNum() == frame + 1) {
+
+        ofSleepMillis(2000);
+    }
+    else if (elapsed_time >= duration.count()) {
+        frame = ofGetFrameNum();
+        circles.clear();
+        ofBackground(255,0,0);
+    } 
+    else {
+        ofBackground(0, 0, 0);
+    }
+
     ofApp::drawCircles();
+
+    ofSetColor(255, 255, 255);
+    font.drawString(ofToString(duration.count() - elapsed_time), ofGetWidth() - 200, 100);
 
     for (int i = 0; i < contourFinder.nBlobs; i++) {
         vector<float> blobCoordinates = ofApp::findBlobs(i);
@@ -325,15 +264,12 @@ void ofApp::draw() {
 
         grayImage.draw(10, 320, 400, 300);
         contourFinder.draw(10, 320, 400, 300);
-
-#ifdef USE_TWO_KINECTS
-        kinect2.draw(420, 320, 400, 300);
-#endif
     }
 
     for ( Circle& circle : circles) {
         circle.currentAmount = 0;
     }
+    amountCorrect = 0;
 }
 
 void ofApp::drawPointCloud() {
@@ -369,6 +305,7 @@ void ofApp::drawCircles() {
         ofSetColor(0);
         font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
         font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
+        font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
 
     }
 }
