@@ -6,9 +6,9 @@
 float blobX;
 float blobY;
 int amountCorrect = 0;
-const int amountOfPlayer = 4;
+const int amountOfPlayer = 3;
 int frame = 0;
-std::chrono::seconds duration(7);
+std::chrono::seconds duration(5);
 auto start_time = std::chrono::steady_clock::now();
 int score = 0;
 bool newRound = true;
@@ -57,6 +57,18 @@ void ofApp::setup() {
 
     font.load("impact.ttf", 50);
     headerFont.load("impact.ttf", 100);
+
+    correct.load("correct.wav");
+    correct.setLoop(false);
+    incorrect.load("incorrect2.mp3");
+    incorrect.setLoop(false);
+    outro.load("outro.wav");
+    outro.setLoop(false);
+    background.load("background.wav");
+    background.setLoop(true);
+
+    background.play();
+
     ofSeedRandom();
 
     numberOfPeople = amountOfPlayer;
@@ -208,13 +220,39 @@ std::vector<float> ofApp::findBlobs(int i) {
 
 }
 
+bool outroPlaying = false;
+bool scoreWritten = false;
+bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw() {
-    if (rounds > 10) {
-        ofSleepMillis(2000);
+    if (rounds > 5) {
+        if (!outroPlaying) {
+            background.stop();
+            outro.play();
+            outroPlaying = true;
+        }
         newRound = false;
         circles.clear();
         ofBackground(0, 0, 100);
+        int highscore = getHighScoreFromFile();
+        
+        
+        if (!scoreWritten) {
+            if (score > highscore) {
+                newHighscore = true;  
+            }
+            writeToFile(score);
+            scoreWritten = true;
+        }
+
+        if (newHighscore) {
+            ofSetColor(255);
+            headerFont.drawString("New Highscore!", ofGetWidth() / 2 - 450, ofGetHeight() / 2 - 200);
+        }
+        else {
+            font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
+        }
+
         headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
 
     }
@@ -223,7 +261,7 @@ void ofApp::draw() {
         auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
         if (amountCorrect == amountOfCircles && amountOfCircles != 0) {
-            score += 10 * (duration.count() - elapsed_time);
+            score += 50 * (duration.count() - elapsed_time);
             ofColor col;
             col.set(0, 255, 0);
             ofClear(col);
@@ -234,9 +272,12 @@ void ofApp::draw() {
             numberOfPeople = amountOfPlayer;
             amountOfCircles = 0;
             rounds++;
+            background.stop();
+            correct.play();
         }
-        else if (ofGetFrameNum() == frame + 1) {
+        else if (ofGetFrameNum() == frame + 1 && ofGetFrameNum()>1) {
             ofSleepMillis(2000);
+            background.play();
 
         }
         else if (elapsed_time >= duration.count()) {
@@ -247,6 +288,8 @@ void ofApp::draw() {
             numberOfPeople = amountOfPlayer;
             amountOfCircles = 0;
             rounds++;
+            background.stop();
+            incorrect.play();
         }
         else {
             ofBackground(0, 0, 0);
@@ -325,8 +368,8 @@ void ofApp::drawCircles() {
 
         ofSetColor(0);
         font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
-        font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
-        font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
+        //font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
+        //font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
 
     }
 }
@@ -336,6 +379,50 @@ void ofApp::drawCircles() {
 void ofApp::exit() {
     kinect.setCameraTiltAngle(0); // zero the tilt on exit
     kinect.close();
+}
+
+//--------------------------------------------------------------
+void ofApp::writeToFile(int score) {
+    // Öffne eine Datei zum Schreiben
+    std::string filePath = ofToDataPath("scores.txt");
+    std::ofstream outputFile(filePath, std::ios::app);
+
+    // Überprüfe, ob die Datei erfolgreich geöffnet wurde
+    if (outputFile.is_open()) {
+        // Schreibe Daten in die Datei
+        outputFile << to_string(score) << std::endl;
+
+        // Schließe die Datei
+        outputFile.close();
+    }
+    else {
+        ofLogError() << "Fehler beim Öffnen der Datei zum Schreiben.";
+    }
+}
+
+int ofApp::getHighScoreFromFile() {
+    // Öffne eine Datei zum Lesen
+    std::string filePath = ofToDataPath("scores.txt");
+    std::ifstream inputFile(filePath);
+    int highscore = 0;
+
+    // Überprüfe, ob die Datei erfolgreich geöffnet wurde
+    if (inputFile.is_open()) {
+        std::string line;
+        while (std::getline(inputFile, line)) {
+            
+            if (stoi(line) > highscore) {
+                highscore = stoi(line);
+            }
+        }
+
+        // Schließe die Datei
+        inputFile.close();
+    }
+    else {
+        ofLogError() << "Fehler beim Öffnen der Datei zum Lesen.";
+    }
+    return highscore;
 }
 
 //--------------------------------------------------------------

@@ -39,6 +39,8 @@ public:
     void mouseEntered(int x, int y);
     void mouseExited(int x, int y);
     void windowResized(int w, int h);
+    void writeToFile(int score);
+    int ofApp::getHighScoreFromFile();
 
     void updateCircles();
     void updateKinect();
@@ -50,6 +52,13 @@ public:
     //fonts
     ofTrueTypeFont font;
     ofTrueTypeFont headerFont;
+
+    //sounds
+    ofSoundPlayer correct;
+    ofSoundPlayer incorrect;
+    ofSoundPlayer background;
+    ofSoundPlayer outro;
+
 
     //circles
     vector<Circle> circles;
