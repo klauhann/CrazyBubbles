@@ -42,12 +42,14 @@ public:
     void writeToFile(int score);
     int ofApp::getHighScoreFromFile();
 
+    void drawKinectImages();
     void updateCircles();
     void updateKinect();
     void updateContours();
     void drawCircles();
     std::vector<float> findBlobs(int i);
     bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
+    void setupNewRound();
 
     //fonts
     ofTrueTypeFont font;

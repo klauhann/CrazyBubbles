@@ -3,12 +3,18 @@
 #include <iostream>
 
 
+//setup
+const int amountOfPlayer = 4;
+const int roundAmount = 10; 
+const int roundTime = 4; //in seconds
+
+
+
 float blobX;
 float blobY;
 int amountCorrect = 0;
-const int amountOfPlayer = 3;
 int frame = 0;
-std::chrono::seconds duration(5);
+std::chrono::seconds duration(roundTime);
 auto start_time = std::chrono::steady_clock::now();
 int score = 0;
 bool newRound = true;
@@ -181,7 +187,7 @@ void ofApp::updateCircles() {
                 numberOfPeople -= thisCircle;
 
                 circles.push_back(Circle(new_x, new_y, new_radius, randomColor, thisCircle));
-                start_time = std::chrono::steady_clock::now();
+                
                 amountOfCircles++;
             }
         }
@@ -220,12 +226,22 @@ std::vector<float> ofApp::findBlobs(int i) {
 
 }
 
+void ofApp::setupNewRound() 
+{
+    frame = ofGetFrameNum();
+    circles.clear();
+    newRound = true;
+    numberOfPeople = amountOfPlayer;
+    amountOfCircles = 0;
+    background.stop();
+}
+
 bool outroPlaying = false;
 bool scoreWritten = false;
 bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw() {
-    if (rounds > 5) {
+    if (rounds > roundAmount) {
         if (!outroPlaying) {
             background.stop();
             outro.play();
@@ -265,30 +281,20 @@ void ofApp::draw() {
             ofColor col;
             col.set(0, 255, 0);
             ofClear(col);
+            setupNewRound();
             ofBackground(0, 255, 0);
-            frame = ofGetFrameNum();
-            circles.clear();
-            newRound = true;
-            numberOfPeople = amountOfPlayer;
-            amountOfCircles = 0;
-            rounds++;
-            background.stop();
             correct.play();
         }
         else if (ofGetFrameNum() == frame + 1 && ofGetFrameNum()>1) {
             ofSleepMillis(2000);
             background.play();
+            start_time = std::chrono::steady_clock::now();
+            rounds++;
 
         }
         else if (elapsed_time >= duration.count()) {
-            frame = ofGetFrameNum();
-            circles.clear();
+            setupNewRound();
             ofBackground(255, 0, 0);
-            newRound = true;
-            numberOfPeople = amountOfPlayer;
-            amountOfCircles = 0;
-            rounds++;
-            background.stop();
             incorrect.play();
         }
         else {
@@ -313,26 +319,32 @@ void ofApp::draw() {
             }
         }
 
-        ofSetColor(255, 255, 255);
-
-        if (bDrawPointCloud) {
-            easyCam.begin();
-            drawPointCloud();
-            easyCam.end();
-        }
-        else {
-            // draw from the live kinect
-            kinect.drawDepth(10, 10, 400, 300);
-            kinect.draw(420, 10, 400, 300);
-
-            grayImage.draw(10, 320, 400, 300);
-            contourFinder.draw(10, 320, 400, 300);
-        }
+        //void drawKinectImages();
+        
 
         for (Circle& circle : circles) {
             circle.currentAmount = 0;
         }
         amountCorrect = 0;
+    }
+}
+
+void ofApp::drawKinectImages()
+{
+    ofSetColor(255, 255, 255);
+
+    if (bDrawPointCloud) {
+        easyCam.begin();
+        drawPointCloud();
+        easyCam.end();
+    }
+    else {
+        // draw from the live kinect
+        kinect.drawDepth(10, 10, 400, 300);
+        kinect.draw(420, 10, 400, 300);
+
+        grayImage.draw(10, 320, 400, 300);
+        contourFinder.draw(10, 320, 400, 300);
     }
 }
 
