@@ -4,7 +4,7 @@
 
 //setup
 int amountOfPlayers = 4;
-const int roundAmount = 10; 
+const int roundAmount = 2; 
 const int roundTime = 4; //in seconds
 
 const int nearThreshold = 205;
@@ -31,7 +31,7 @@ float myMouseY = -1;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
-    gameState = mainScreen;
+    gameState = gameLoop;
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     // enable depth->video image calibration
@@ -210,7 +210,7 @@ void ofApp::setupNewRound() {
     numberOfPeople = amountOfPlayers;
     amountOfCircles = 0;
     amountCorrect = 0;
-    background.stop();
+    background.setVolume(0.2);
 }
 
 bool outroPlaying = false;
@@ -259,7 +259,7 @@ void ofApp::drawGameLoop() {
 
         if (ofGetFrameNum() == frame + 1 && ofGetFrameNum() > 1) { //frame after a new round
             ofSleepMillis(2000);
-            background.play();
+            background.setVolume(1);
             startTime = std::chrono::steady_clock::now();
             rounds++;
         }
