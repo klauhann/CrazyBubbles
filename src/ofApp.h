@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
+#include "ofxGui.h"
 
 #include <vector>
 #include <cmath>
@@ -18,8 +19,6 @@ public:
     ofColor color;
     int expectedAmount;
     int currentAmount = 0;
-
-    void drawCircle(int amountOfPeople);
 };
 
 class ofApp : public ofBaseApp {
@@ -45,6 +44,7 @@ public:
     void startGame();
     void drawKinectImages();
     void drawGameLoop();
+    void drawMainMenu();
     void updateCircles();
     void updateKinect();
     void updateContours();
@@ -69,7 +69,7 @@ public:
 
     enum gameStateEnum
     {
-        mainScreen = 0,
+        mainMenu = 0,
         gameLoop = 1,
         endScreen = 2
     };

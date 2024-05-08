@@ -31,7 +31,7 @@ float myMouseY = -1;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
-    gameState = gameLoop;
+    gameState = mainMenu;
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     setupKinect();
@@ -230,9 +230,17 @@ bool scoreWritten = false;
 bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw() {
+    ofBackground(0, 0, 0);
     if (gameState == gameLoop) {
         drawGameLoop();
     }
+    else if (gameState == mainMenu) {
+        drawMainMenu();
+    }
+}
+
+void ofApp::drawMainMenu() {
+    ofxInputField<std::string> field;
 }
 
 void ofApp::drawGameLoop() {
