@@ -41,6 +41,7 @@ public:
     int ofApp::getHighScoreFromFile();
 
     void drawKinectImages();
+    void drawGameLoop();
     void updateCircles();
     void updateKinect();
     void updateContours();
@@ -62,6 +63,14 @@ public:
 
     //circles
     vector<Circle> circles;
+
+    enum gameStateEnum
+    {
+        mainScreen = 0,
+        gameLoop = 1,
+        endScreen = 2
+    };
+    gameStateEnum gameState;
 
 
     ofxKinect kinect;

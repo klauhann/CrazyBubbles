@@ -31,6 +31,7 @@ float myMouseY = -1;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
+    gameState = mainScreen;
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     // enable depth->video image calibration
@@ -81,9 +82,11 @@ void ofApp::setup() {
 
 //--------------------------------------------------------------
 void ofApp::update() {
-    ofApp::updateCircles();
-    ofApp::updateKinect();
-    ofApp::updateContours();
+    if (gameState == gameLoop) {
+        ofApp::updateCircles();
+        ofApp::updateKinect();
+        ofApp::updateContours();
+    }
 }
 
 void ofApp::updateContours() {
@@ -215,6 +218,12 @@ bool scoreWritten = false;
 bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw() {
+    if (gameState == gameLoop) {
+        drawGameLoop();
+    }
+}
+
+void ofApp::drawGameLoop() {
     if (rounds > roundAmount) { // game is over
         if (!outroPlaying) {
             background.stop();
@@ -225,10 +234,10 @@ void ofApp::draw() {
         circles.clear();
         ofBackground(0, 0, 100); //blue
         int highscore = getHighScoreFromFile();
-        
+
         if (!scoreWritten) {
             if (score > highscore) {
-                newHighscore = true;  
+                newHighscore = true;
             }
             writeToFile(score);
             scoreWritten = true;
@@ -259,7 +268,7 @@ void ofApp::draw() {
             setupNewRound();
             ofBackground(0, 255, 0);
             correct.play();
-        } 
+        }
         else if (elapsed_time >= duration.count()) {
             setupNewRound();
             ofBackground(255, 0, 0);
@@ -295,7 +304,7 @@ void ofApp::draw() {
             myMouseY = -1.0;
         }
 
-        if(setupKinect) {
+        if (setupKinect) {
             void drawKinectImages();
         }
     }
