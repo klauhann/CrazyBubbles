@@ -3,7 +3,7 @@
 
 
 //setup
-const int amountOfPlayers = 4;
+int amountOfPlayers = 4;
 const int roundAmount = 10; 
 const int roundTime = 4; //in seconds
 
@@ -12,7 +12,7 @@ const int farThreshold = 175;
 const float minBlobSize = 800;
 const float maxBlobSize = 20000.0;
 const bool setupKinect = false; // set this to true to draw kinect images
-const bool noKinect = false; //set this to true if testing without a kinect
+const bool noKinect = true; //set this to true if testing without a kinect (and test with mouse clicks)
 
 //global variables
 int amountCorrect = 0;
@@ -25,6 +25,9 @@ bool newRound = true;
 int numberOfPeople;
 int amountOfCircles = 0;
 int rounds = 1;
+
+float myMouseX = -1;
+float myMouseY = -1;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -66,11 +69,13 @@ void ofApp::setup() {
     outro.setLoop(false);
     background.load("background.wav");
     background.setLoop(true);
-
     background.play();
 
     ofSeedRandom();
 
+    if (noKinect) {
+        amountOfPlayers = 1;
+    }
     numberOfPeople = amountOfPlayers;
 }
 
@@ -82,6 +87,9 @@ void ofApp::update() {
 }
 
 void ofApp::updateContours() {
+    if (noKinect) {
+        contourFinder.nBlobs = 1;
+    }
     for (int i = 0; i < contourFinder.nBlobs; i++) {
         vector<float> coordinates = ofApp::findBlobs(i);
 
@@ -164,6 +172,9 @@ void ofApp::updateCircles() {
 }
 
 std::vector<float> ofApp::findBlobs(int i) {
+    if (noKinect) {
+        return { myMouseX, myMouseY };
+    }
     // Loop through all contours found
     // Get the current contour
     ofxCvBlob blob = contourFinder.blobs[i];
@@ -189,8 +200,7 @@ std::vector<float> ofApp::findBlobs(int i) {
 
 }
 
-void ofApp::setupNewRound() 
-{
+void ofApp::setupNewRound() {
     frame = ofGetFrameNum();
     circles.clear();
     newRound = true;
@@ -278,6 +288,10 @@ void ofApp::draw() {
                 circle.currentAmount = 0;
             }
             amountCorrect = 0;
+        }
+        if (noKinect) {
+            myMouseX = -1.0;
+            myMouseY = -1.0;
         }
 
         if(setupKinect) {
@@ -370,7 +384,8 @@ void ofApp::mousePressed(int x, int y, int button)
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button)
 {
-
+    myMouseX = x * 1.0;
+    myMouseY = y * 1.0;
 }
 
 //--------------------------------------------------------------
