@@ -30,8 +30,6 @@ public:
     void draw();
     void exit();
 
-    void drawPointCloud();
-
     void keyPressed(int key);
     void mouseDragged(int x, int y, int button);
     void mousePressed(int x, int y, int button);
@@ -68,7 +66,6 @@ public:
 
     ofxKinect kinect;
 
-
     ofxCvColorImage colorImg;
 
     ofxCvGrayscaleImage grayImage; // grayscale depth image
@@ -78,11 +75,6 @@ public:
     ofxCvContourFinder contourFinder;
 
     bool bThreshWithOpenCV;
-    bool bDrawPointCloud;
-
-    int nearThreshold;
-    int farThreshold;
-
     int angle;
 
     // used for viewing the point cloud

@@ -1,21 +1,25 @@
 #include "ofApp.h"
-
 #include <iostream>
 
 
 //setup
-const int amountOfPlayer = 4;
+const int amountOfPlayers = 4;
 const int roundAmount = 10; 
 const int roundTime = 4; //in seconds
 
+const int nearThreshold = 205;
+const int farThreshold = 175;
+const float minBlobSize = 800;
+const float maxBlobSize = 20000.0;
+const bool setupKinect = false; // set this to true to draw kinect images
+const bool noKinect = false; //set this to true if testing without a kinect
 
-
-float blobX;
-float blobY;
+//global variables
 int amountCorrect = 0;
 int frame = 0;
 std::chrono::seconds duration(roundTime);
-auto start_time = std::chrono::steady_clock::now();
+auto startTime = std::chrono::steady_clock::now();
+
 int score = 0;
 bool newRound = true;
 int numberOfPeople;
@@ -28,12 +32,8 @@ void ofApp::setup() {
 
     // enable depth->video image calibration
     kinect.setRegistration(true);
-
     kinect.init();
-
-
     kinect.open();
-
 
     // print the intrinsic IR sensor values
     if (kinect.isConnected()) {
@@ -48,19 +48,13 @@ void ofApp::setup() {
     grayThreshNear.allocate(kinect.width, kinect.height);
     grayThreshFar.allocate(kinect.width, kinect.height);
 
-    nearThreshold = 205;
-    farThreshold = 175;
-    bThreshWithOpenCV = true;
-
     ofSetFrameRate(60);
 
     // zero the tilt on startup
     angle = 0;
     kinect.setCameraTiltAngle(angle);
 
-    // start from the front
-    bDrawPointCloud = false;
-
+    //load assets
     font.load("impact.ttf", 50);
     headerFont.load("impact.ttf", 100);
 
@@ -77,7 +71,7 @@ void ofApp::setup() {
 
     ofSeedRandom();
 
-    numberOfPeople = amountOfPlayer;
+    numberOfPeople = amountOfPlayers;
 }
 
 //--------------------------------------------------------------
@@ -88,7 +82,6 @@ void ofApp::update() {
 }
 
 void ofApp::updateContours() {
-
     for (int i = 0; i < contourFinder.nBlobs; i++) {
         vector<float> coordinates = ofApp::findBlobs(i);
 
@@ -115,7 +108,6 @@ bool ofApp::isPointInCircle(double x, double y, double x_center, double y_center
     return distance <= radius;
 }
 
-
 void ofApp::updateKinect() {
     kinect.update();
 
@@ -127,27 +119,11 @@ void ofApp::updateKinect() {
 
         // we do two thresholds - one for the far plane and one for the near plane
         // we then do a cvAnd to get the pixels which are a union of the two thresholds
-        if (bThreshWithOpenCV) {
-            grayThreshNear = grayImage;
-            grayThreshFar = grayImage;
-            grayThreshNear.threshold(nearThreshold, true);
-            grayThreshFar.threshold(farThreshold);
-            cvAnd(grayThreshNear.getCvImage(), grayThreshFar.getCvImage(), grayImage.getCvImage(), NULL);
-        }
-        else {
-
-            // or we do it ourselves - show people how they can work with the pixels
-            ofPixels& pix = grayImage.getPixels();
-            int numPixels = pix.size();
-            for (int i = 0; i < numPixels; i++) {
-                if (pix[i] < nearThreshold && pix[i] > farThreshold) {
-                    pix[i] = 255;
-                }
-                else {
-                    pix[i] = 0;
-                }
-            }
-        }
+        grayThreshNear = grayImage;
+        grayThreshFar = grayImage;
+        grayThreshNear.threshold(nearThreshold, true);
+        grayThreshFar.threshold(farThreshold);
+        cvAnd(grayThreshNear.getCvImage(), grayThreshFar.getCvImage(), grayImage.getCvImage(), NULL);
 
         // update the cv images
         grayImage.flagImageChanged();
@@ -155,8 +131,6 @@ void ofApp::updateKinect() {
         // find contours which are between the size of 20 pixels and 1/3 the w*h pixels.
         // also, find holes is set to true so we will get interior contours as well....
         contourFinder.findContours(grayImage, 10, (kinect.width * kinect.height) / 2, 20, false);
-
-
     }
 }
 
@@ -173,45 +147,34 @@ void ofApp::updateCircles() {
             bool overlaps = false;
 
             for (const Circle& circle : circles) {
-
                 float distance = ofDist(new_x, new_y, circle.x, circle.y);
-
-
                 if (distance < new_radius + circle.radius + 20) {
                     overlaps = true;
                     break;
                 }
             }
-            //int numberOfPeople = 1;
+
             if (!overlaps) {
                 numberOfPeople -= thisCircle;
-
                 circles.push_back(Circle(new_x, new_y, new_radius, randomColor, thisCircle));
-                
                 amountOfCircles++;
             }
         }
     }
-
-
 }
 
 std::vector<float> ofApp::findBlobs(int i) {
-    float minBlobSize = 800;
-    float maxBlobSize = 20000.0;
-
     // Loop through all contours found
     // Get the current contour
     ofxCvBlob blob = contourFinder.blobs[i];
-
     float blobSize = blob.area;
 
     if (blobSize >= minBlobSize && blobSize <= maxBlobSize) {
         ofPoint centroid = blob.centroid;
 
-        // Greifen Sie auf die Koordinaten des j-ten Punktes der Kontur zu
-        blobX = centroid.x * (1920 / 640);
-        blobY = centroid.y * (1080 / 480);
+        // Transfrom blobs based on beamer size and angle
+        float blobX = centroid.x * (1920 / 640);
+        float blobY = centroid.y * (1080 / 480);
 
         blobX *= 1.4;
         blobY *= 1.55;
@@ -231,7 +194,7 @@ void ofApp::setupNewRound()
     frame = ofGetFrameNum();
     circles.clear();
     newRound = true;
-    numberOfPeople = amountOfPlayer;
+    numberOfPeople = amountOfPlayers;
     amountOfCircles = 0;
     background.stop();
 }
@@ -241,7 +204,7 @@ bool scoreWritten = false;
 bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw() {
-    if (rounds > roundAmount) {
+    if (rounds > roundAmount) { // game is over
         if (!outroPlaying) {
             background.stop();
             outro.play();
@@ -249,9 +212,8 @@ void ofApp::draw() {
         }
         newRound = false;
         circles.clear();
-        ofBackground(0, 0, 100);
+        ofBackground(0, 0, 100); //blue
         int highscore = getHighScoreFromFile();
-        
         
         if (!scoreWritten) {
             if (score > highscore) {
@@ -270,28 +232,23 @@ void ofApp::draw() {
         }
 
         headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
-
     }
     else {
         auto current_time = std::chrono::steady_clock::now();
-        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - startTime).count();
 
-        if (amountCorrect == amountOfCircles && amountOfCircles != 0) {
+        if (ofGetFrameNum() == frame + 1 && ofGetFrameNum() > 1) { //frame after a new round
+            ofSleepMillis(2000);
+            background.play();
+            startTime = std::chrono::steady_clock::now();
+            rounds++;
+        }
+        else if (amountCorrect == amountOfCircles && amountOfCircles != 0) {
             score += 50 * (duration.count() - elapsed_time);
-            ofColor col;
-            col.set(0, 255, 0);
-            ofClear(col);
             setupNewRound();
             ofBackground(0, 255, 0);
             correct.play();
-        }
-        else if (ofGetFrameNum() == frame + 1 && ofGetFrameNum()>1) {
-            ofSleepMillis(2000);
-            background.play();
-            start_time = std::chrono::steady_clock::now();
-            rounds++;
-
-        }
+        } 
         else if (elapsed_time >= duration.count()) {
             setupNewRound();
             ofBackground(255, 0, 0);
@@ -299,78 +256,45 @@ void ofApp::draw() {
         }
         else {
             ofBackground(0, 0, 0);
-        }
+            ofApp::drawCircles();
 
+            // draw info
+            ofSetColor(255, 255, 255);
+            font.drawString("Time: " + ofToString(duration.count() - elapsed_time), ofGetWidth() - 300, 100);
+            font.drawString("Score: " + ofToString(score), ofGetWidth() - 300, 200);
+            font.drawString("Round: " + ofToString(rounds), ofGetWidth() - 300, 300);
 
-        ofApp::drawCircles();
+            // draw blobs
+            for (int i = 0; i < contourFinder.nBlobs; i++) {
+                vector<float> blobCoordinates = ofApp::findBlobs(i);
 
-        ofSetColor(255, 255, 255);
-        font.drawString("Time: " + ofToString(duration.count() - elapsed_time), ofGetWidth() - 300, 100);
-        font.drawString("Score: " + ofToString(score), ofGetWidth() - 300, 200);
-        font.drawString("Round: " + ofToString(rounds), ofGetWidth() - 300, 300);
-
-        for (int i = 0; i < contourFinder.nBlobs; i++) {
-            vector<float> blobCoordinates = ofApp::findBlobs(i);
-
-            if (blobCoordinates.at(0) >= 0) {
-                ofColor white(255, 255, 255);
-                ofSetColor(white);
-                ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
+                if (blobCoordinates.at(0) >= 0) {
+                    ofColor white(255, 255, 255);
+                    ofSetColor(white);
+                    ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
+                }
             }
+            for (Circle& circle : circles) {
+                circle.currentAmount = 0;
+            }
+            amountCorrect = 0;
         }
 
-        //void drawKinectImages();
-        
-
-        for (Circle& circle : circles) {
-            circle.currentAmount = 0;
+        if(setupKinect) {
+            void drawKinectImages();
         }
-        amountCorrect = 0;
     }
 }
 
 void ofApp::drawKinectImages()
 {
     ofSetColor(255, 255, 255);
+    // draw from the live kinect
+    kinect.drawDepth(10, 10, 400, 300);
+    kinect.draw(420, 10, 400, 300);
 
-    if (bDrawPointCloud) {
-        easyCam.begin();
-        drawPointCloud();
-        easyCam.end();
-    }
-    else {
-        // draw from the live kinect
-        kinect.drawDepth(10, 10, 400, 300);
-        kinect.draw(420, 10, 400, 300);
-
-        grayImage.draw(10, 320, 400, 300);
-        contourFinder.draw(10, 320, 400, 300);
-    }
-}
-
-void ofApp::drawPointCloud() {
-    int w = 640;
-    int h = 480;
-    ofMesh mesh;
-    mesh.setMode(OF_PRIMITIVE_POINTS);
-    int step = 2;
-    for (int y = 0; y < h; y += step) {
-        for (int x = 0; x < w; x += step) {
-            if (kinect.getDistanceAt(x, y) > 0) {
-                mesh.addColor(kinect.getColorAt(x, y));
-                mesh.addVertex(kinect.getWorldCoordinateAt(x, y));
-            }
-        }
-    }
-    glPointSize(3);
-    ofPushMatrix();
-    // the projected points are 'upside down' and 'backwards' 
-    ofScale(1, -1, -1);
-    ofTranslate(0, 0, -1000); // center the points a bit
-    ofEnableDepthTest();
-    mesh.drawVertices();
-    ofDisableDepthTest();
-    ofPopMatrix();
+    grayImage.draw(10, 320, 400, 300);
+    contourFinder.draw(10, 320, 400, 300);
 }
 
 void ofApp::drawCircles() {
@@ -382,7 +306,6 @@ void ofApp::drawCircles() {
         font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
         //font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
         //font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
-
     }
 }
 
@@ -395,16 +318,11 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::writeToFile(int score) {
-    // Öffne eine Datei zum Schreiben
     std::string filePath = ofToDataPath("scores.txt");
     std::ofstream outputFile(filePath, std::ios::app);
 
-    // Überprüfe, ob die Datei erfolgreich geöffnet wurde
     if (outputFile.is_open()) {
-        // Schreibe Daten in die Datei
         outputFile << to_string(score) << std::endl;
-
-        // Schließe die Datei
         outputFile.close();
     }
     else {
@@ -413,22 +331,17 @@ void ofApp::writeToFile(int score) {
 }
 
 int ofApp::getHighScoreFromFile() {
-    // Öffne eine Datei zum Lesen
     std::string filePath = ofToDataPath("scores.txt");
     std::ifstream inputFile(filePath);
     int highscore = 0;
 
-    // Überprüfe, ob die Datei erfolgreich geöffnet wurde
     if (inputFile.is_open()) {
         std::string line;
         while (std::getline(inputFile, line)) {
-            
             if (stoi(line) > highscore) {
                 highscore = stoi(line);
             }
         }
-
-        // Schließe die Datei
         inputFile.close();
     }
     else {
