@@ -11,7 +11,7 @@ const int nearThreshold = 205;
 const int farThreshold = 175;
 const float minBlobSize = 800;
 const float maxBlobSize = 20000.0;
-const bool setupKinect = false; // set this to true to draw kinect images
+const bool drawKinect = false;
 const bool noKinect = true; //set this to true if testing without a kinect (and test with mouse clicks)
 
 //global variables
@@ -21,7 +21,7 @@ std::chrono::seconds duration(roundTime);
 auto startTime = std::chrono::steady_clock::now();
 
 int score = 0;
-bool newRound = true;
+bool newRound = false;
 int numberOfPeople;
 int amountOfCircles = 0;
 int rounds = 1;
@@ -34,6 +34,21 @@ void ofApp::setup() {
     gameState = gameLoop;
     ofSetLogLevel(OF_LOG_VERBOSE);
 
+    setupKinect();
+    setupAssets();
+    startGame();
+}
+
+void ofApp::startGame() {
+    newRound = true;
+    if (noKinect) {
+        amountOfPlayers = 1;
+    }
+    numberOfPeople = amountOfPlayers;
+
+}
+
+void ofApp::setupKinect() {
     // enable depth->video image calibration
     kinect.setRegistration(true);
     kinect.init();
@@ -57,7 +72,9 @@ void ofApp::setup() {
     // zero the tilt on startup
     angle = 0;
     kinect.setCameraTiltAngle(angle);
+}
 
+void ofApp::setupAssets() {
     //load assets
     font.load("impact.ttf", 50);
     headerFont.load("impact.ttf", 100);
@@ -73,11 +90,6 @@ void ofApp::setup() {
     background.play();
 
     ofSeedRandom();
-
-    if (noKinect) {
-        amountOfPlayers = 1;
-    }
-    numberOfPeople = amountOfPlayers;
 }
 
 //--------------------------------------------------------------
@@ -207,10 +219,10 @@ void ofApp::setupNewRound() {
     frame = ofGetFrameNum();
     circles.clear();
     newRound = true;
-    numberOfPeople = amountOfPlayers;
     amountOfCircles = 0;
     amountCorrect = 0;
     background.setVolume(0.2);
+    numberOfPeople = amountOfPlayers;
 }
 
 bool outroPlaying = false;
@@ -304,7 +316,7 @@ void ofApp::drawGameLoop() {
             myMouseY = -1.0;
         }
 
-        if (setupKinect) {
+        if (drawKinect) {
             void drawKinectImages();
         }
     }

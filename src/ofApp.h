@@ -40,6 +40,9 @@ public:
     void writeToFile(int score);
     int ofApp::getHighScoreFromFile();
 
+    void setupKinect();
+    void setupAssets();
+    void startGame();
     void drawKinectImages();
     void drawGameLoop();
     void updateCircles();
