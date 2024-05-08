@@ -206,6 +206,7 @@ void ofApp::setupNewRound() {
     newRound = true;
     numberOfPeople = amountOfPlayers;
     amountOfCircles = 0;
+    amountCorrect = 0;
     background.stop();
 }
 
