@@ -29,23 +29,31 @@ int rounds = 1;
 float myMouseX = -1;
 float myMouseY = -1;
 
+vector<Circle> menuCircles;
+
 //--------------------------------------------------------------
 void ofApp::setup() {
-    gameState = mainMenu;
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     setupKinect();
     setupAssets();
-    startGame();
+    setupMainMenu();
 }
 
 void ofApp::startGame() {
-    newRound = true;
+    circles.clear();
+    amountCorrect = 0;
+    frame = 0;
+    score = 0;
+    amountOfCircles = 0;
+    rounds = 1;
     if (noKinect) {
         amountOfPlayers = 1;
     }
     numberOfPeople = amountOfPlayers;
-
+    gameState = gameLoop;
+    newRound = true;
+    startTime = std::chrono::steady_clock::now();
 }
 
 void ofApp::setupKinect() {
@@ -92,6 +100,11 @@ void ofApp::setupAssets() {
     ofSeedRandom();
 }
 
+void ofApp::setupMainMenu() {
+    gameState = mainMenu;
+    circles.clear();
+    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, (154, 60, 201), 100));
+}
 //--------------------------------------------------------------
 void ofApp::update() {
     if (gameState == gameLoop) {
@@ -99,15 +112,24 @@ void ofApp::update() {
         ofApp::updateKinect();
         ofApp::updateContours();
     }
+    else if (gameState == mainMenu) {
+        ofApp::updateMainMenu();
+    }
+}
+
+int framesInCircle = 0;
+void ofApp::updateMainMenu() {
+    auto blobs = ofApp::findBlobs();
+    for (int i = 0; i < blobs.size(); i++) {
+        if(isPointInCircle())
+    }
+
 }
 
 void ofApp::updateContours() {
-    if (noKinect) {
-        contourFinder.nBlobs = 1;
-    }
-    for (int i = 0; i < contourFinder.nBlobs; i++) {
-        vector<float> coordinates = ofApp::findBlobs(i);
-
+    auto blobs = ofApp::findBlobs();
+    for (int i = 0; i < blobs.size(); i++) {
+        vector<float> coordinates = blobs[i];
         if (coordinates.at(0) >= 0) {
             for (Circle& circle : circles) {
                 float xStartCircle = circle.x - circle.radius;
@@ -180,39 +202,45 @@ void ofApp::updateCircles() {
             if (!overlaps) {
                 numberOfPeople -= thisCircle;
                 circles.push_back(Circle(new_x, new_y, new_radius, randomColor, thisCircle));
-                amountOfCircles++;
+               
             }
         }
+        amountOfCircles = circles.size();
     }
 }
 
-std::vector<float> ofApp::findBlobs(int i) {
+std::vector<vector<float>> ofApp::findBlobs() {
+    vector<vector<float>> blobs;
+
     if (noKinect) {
-        return { myMouseX, myMouseY };
+        contourFinder.nBlobs = 1;
     }
-    // Loop through all contours found
-    // Get the current contour
-    ofxCvBlob blob = contourFinder.blobs[i];
-    float blobSize = blob.area;
+    for (int i = 0; i < contourFinder.nBlobs; i++) {
+        if (noKinect) {
+            blobs.push_back({ myMouseX, myMouseY });
+        }
+        // Loop through all contours found
+        // Get the current contour
+        ofxCvBlob blob = contourFinder.blobs[i];
+        float blobSize = blob.area;
 
-    if (blobSize >= minBlobSize && blobSize <= maxBlobSize) {
-        ofPoint centroid = blob.centroid;
+        if (blobSize >= minBlobSize && blobSize <= maxBlobSize) {
+            ofPoint centroid = blob.centroid;
 
-        // Transfrom blobs based on beamer size and angle
-        float blobX = centroid.x * (1920 / 640);
-        float blobY = centroid.y * (1080 / 480);
+            // Transfrom blobs based on beamer size and angle
+            float blobX = centroid.x * (1920 / 640);
+            float blobY = centroid.y * (1080 / 480);
 
-        blobX *= 1.4;
-        blobY *= 1.55;
+            blobX *= 1.4;
+            blobY *= 1.55;
 
-        std::vector<float> coordinates = { blobX, blobY };
-        return coordinates;
+            blobs.push_back({ blobX, blobY });
+        }
+        else {
+            blobs.push_back({ -1,-1 });
+        }
     }
-    else {
-        std::vector<float> coordinates = { -1, -1 };
-        return coordinates;
-    }
-
+    return blobs;
 }
 
 void ofApp::setupNewRound() {
@@ -237,41 +265,55 @@ void ofApp::draw() {
     else if (gameState == mainMenu) {
         drawMainMenu();
     }
+    else if (gameState == endScreen) {
+        drawEndScreen();
+    }
 }
 
+void ofApp::drawEndScreen() {
+    if (!outroPlaying) {
+        background.stop();
+        outro.play();
+        outroPlaying = true;
+    }
+    newRound = false;
+    circles.clear();
+    ofBackground(0, 0, 100); //blue
+    int highscore = getHighScoreFromFile();
+
+    if (!scoreWritten) {
+        if (score > highscore) {
+            newHighscore = true;
+        }
+        writeToFile(score);
+        scoreWritten = true;
+    }
+
+    if (newHighscore) {
+        ofSetColor(255);
+        headerFont.drawString("New Highscore!", ofGetWidth() / 2 - 450, ofGetHeight() / 2 - 200);
+    }
+    else {
+        font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
+    }
+
+    headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
+}
+
+
 void ofApp::drawMainMenu() {
-    ofxInputField<std::string> field;
+    headerFont.drawString("Start Game", ofGetWidth() / 2, ofGetHeight() / 2);
+    Circle circle = Circle(ofGetWidth() / 2, ofGetHeight() / 2 + 400, 300, (ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255)), 0);
+    ofDrawCircle(circle.x, circle.y, circle.radius);
+
+    if (isPointInCircle(myMouseX, myMouseY, circle.x, circle.y, circle.radius) == true) {
+        startGame();
+    }
 }
 
 void ofApp::drawGameLoop() {
     if (rounds > roundAmount) { // game is over
-        if (!outroPlaying) {
-            background.stop();
-            outro.play();
-            outroPlaying = true;
-        }
-        newRound = false;
-        circles.clear();
-        ofBackground(0, 0, 100); //blue
-        int highscore = getHighScoreFromFile();
-
-        if (!scoreWritten) {
-            if (score > highscore) {
-                newHighscore = true;
-            }
-            writeToFile(score);
-            scoreWritten = true;
-        }
-
-        if (newHighscore) {
-            ofSetColor(255);
-            headerFont.drawString("New Highscore!", ofGetWidth() / 2 - 450, ofGetHeight() / 2 - 200);
-        }
-        else {
-            font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
-        }
-
-        headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
+        gameState = endScreen;
     }
     else {
         auto current_time = std::chrono::steady_clock::now();

@@ -41,15 +41,18 @@ public:
 
     void setupKinect();
     void setupAssets();
+    void setupMainMenu();
     void startGame();
-    void drawKinectImages();
-    void drawGameLoop();
-    void drawMainMenu();
+    void updateMainMenu();
     void updateCircles();
     void updateKinect();
     void updateContours();
+    void drawKinectImages();
+    void drawGameLoop();
+    void drawMainMenu();
+    void drawEndScreen();
     void drawCircles();
-    std::vector<float> findBlobs(int i);
+    std::vector<std::vector<float>> findBlobs();
     bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
     void setupNewRound();
 
@@ -73,7 +76,7 @@ public:
         gameLoop = 1,
         endScreen = 2
     };
-    gameStateEnum gameState;
+    gameStateEnum gameState = mainMenu;
 
 
     ofxKinect kinect;
