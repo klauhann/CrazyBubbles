@@ -29,6 +29,7 @@ x86/
 bld/
 [Bb]in/
 ![Bb]in/[Dd]ata/
+bin/data/scores.txt
 [Oo]bj/
 [Oo]ut/
 [Ll]og/
