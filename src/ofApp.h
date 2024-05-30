@@ -38,7 +38,7 @@ public:
     void mouseExited(int x, int y);
     void windowResized(int w, int h);
     void writeToFile(int score);
-    int ofApp::getHighScoreFromFile();
+    int getHighScoreFromFile();
 
     void drawKinectImages();
     void updateCircles();
