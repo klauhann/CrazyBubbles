@@ -341,7 +341,7 @@ void ofApp::writeToFile(int score) {
         outputFile.close();
     }
     else {
-        ofLogError() << "Fehler beim Öffnen der Datei zum Schreiben.";
+        ofLogError() << "Fehler beim ï¿½ffnen der Datei zum Schreiben.";
     }
 }
 
@@ -360,7 +360,7 @@ int ofApp::getHighScoreFromFile() {
         inputFile.close();
     }
     else {
-        ofLogError() << "Fehler beim Öffnen der Datei zum Lesen.";
+        ofLogError() << "Fehler beim ï¿½ffnen der Datei zum Lesen.";
     }
     return highscore;
 }
