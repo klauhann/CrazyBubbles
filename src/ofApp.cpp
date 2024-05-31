@@ -37,6 +37,7 @@ void ofApp::setup()
     if (noKinect)
     {
         waitTime = 3;
+        amountOfPlayers = 1;
     }
     ofSetLogLevel(OF_LOG_VERBOSE);
 
@@ -53,10 +54,6 @@ void ofApp::startGame()
     score = 0;
     amountOfCircles = 0;
     rounds = 1;
-    if (noKinect)
-    {
-        amountOfPlayers = 1;
-    }
     numberOfPeople = amountOfPlayers;
     gameState = gameLoop;
     newRound = true;
@@ -117,6 +114,11 @@ void ofApp::setupMainMenu()
     circles.clear();
     ofColor purple(154, 60, 201);
     circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, purple, 0));
+    for (int i = 2; i <= 8; i++)
+    {
+        ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+        circles.push_back(Circle((i-1) * (200 + 5), ofGetHeight() / 2 + 300, 70, randomColor, i));
+    }
 }
 
 void ofApp::setupEndScreen()
@@ -172,10 +174,19 @@ void ofApp::updateEndScreen()
 void ofApp::updateMainMenu()
 {
     auto blobs = ofApp::findBlobs();
-    for (int i = 0; i < blobs.size(); i++)
+    if (circles.size() > 0 && blobs[0].at(0) >= 0 && blobs[0].at(1) >= 0)
     {
-        if (circles.size() > 0 && blobs[i].at(0) >= 0 && blobs[i].at(1) >= 0)
+        for (int i = 0; i < blobs.size(); i++)
         {
+            for (int j = 1; j < circles.size(); j++)
+            {
+                if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[j].x, circles[j].y, circles[j].radius) == true)
+                {
+                    amountOfPlayers = circles[j].expectedAmount;
+                    ofLog() << "amountOfPlayers: " << amountOfPlayers;
+                }
+            }
+
             if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
             {
                 framesInCircle++;
@@ -395,6 +406,7 @@ void ofApp::drawEndScreen()
 void ofApp::drawMainMenu()
 {
     headerFont.drawString("Start Game", ofGetWidth() / 2, ofGetHeight() / 2);
+    font.drawString(("Amount of players: " + amountOfPlayers), ofGetWidth() / 2 - 200, ofGetHeight() / 2 + 200);
     drawCircles();
 }
 
@@ -484,13 +496,14 @@ void ofApp::drawKinectImages()
 }
 
 void ofApp::drawCircles()
-{if (gameState == endScreen)
-        {
-            ofLog() << "drawCircles " << circles.size();
-        }
+{
+    if (gameState == endScreen)
+    {
+        ofLog() << "drawCircles " << circles.size();
+    }
     for (const Circle &circle : circles)
     {
-        
+
         ofSetColor(circle.color);
         ofDrawCircle(circle.x, circle.y, circle.radius);
 
