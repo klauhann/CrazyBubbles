@@ -89,16 +89,16 @@ void ofApp::setupKinect()
 void ofApp::setupAssets()
 {
     // load assets
-    font.load("impact.ttf", 50);
-    headerFont.load("impact.ttf", 100);
+    font.load("assets/impact.ttf", 50);
+    headerFont.load("assets/impact.ttf", 100);
 
-    correct.load("correct.wav");
+    correct.load("assets/correct.wav");
     correct.setLoop(false);
-    incorrect.load("incorrect2.mp3");
+    incorrect.load("assets/incorrect2.mp3");
     incorrect.setLoop(false);
-    outro.load("outro.wav");
+    outro.load("assets/outro.wav");
     outro.setLoop(false);
-    background.load("background.wav");
+    background.load("assets/background.wav");
     background.setLoop(true);
     background.play();
 
