@@ -27,8 +27,10 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
-![Bb]in/[Dd]ata/
+bin/*
+!bin/data/
+bin/data/*
+!bin/data/assets/
 bin/data/scores.txt
 [Oo]bj/
 [Oo]ut/
