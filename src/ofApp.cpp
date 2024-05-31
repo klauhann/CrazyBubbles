@@ -128,7 +128,6 @@ void ofApp::setupEndScreen()
     circles.clear();
     ofColor white(255, 255, 255);
     circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() / 2, 300, white, 0));
-    ofLog() << "setupEndScreen " << circles.size();
 }
 //--------------------------------------------------------------
 void ofApp::update()
@@ -154,13 +153,10 @@ void ofApp::updateEndScreen()
     auto blobs = ofApp::findBlobs();
     for (int i = 0; i < blobs.size(); i++)
     {
-        ofLog() << "update " << circles.size();
         if (circles.size() > 0 && blobs[i].at(0) >= 0 && blobs[i].at(1) >= 0)
         {
-            ofLog() << "update " << circles.size();
             if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
             {
-                ofLog() << "update 2 " << circles.size();
                 framesInCircle++;
                 if (framesInCircle >= waitTime)
                 {
@@ -497,10 +493,6 @@ void ofApp::drawKinectImages()
 
 void ofApp::drawCircles()
 {
-    if (gameState == endScreen)
-    {
-        ofLog() << "drawCircles " << circles.size();
-    }
     for (const Circle &circle : circles)
     {
 
