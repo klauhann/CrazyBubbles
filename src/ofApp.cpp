@@ -5,6 +5,7 @@
 int amountOfPlayers = 4;
 const int roundAmount = 2;
 const int roundTime = 4; // in seconds
+int waitTime = 60;       // time to stay in circle before game starts in frames
 
 const int nearThreshold = 205;
 const int farThreshold = 175;
@@ -28,11 +29,15 @@ int rounds = 1;
 float myMouseX = -1;
 float myMouseY = -1;
 
-vector<Circle> menuCircles;
+int framesInCircle = 0;
 
 //--------------------------------------------------------------
 void ofApp::setup()
 {
+    if (noKinect)
+    {
+        waitTime = 3;
+    }
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     setupKinect();
@@ -107,9 +112,21 @@ void ofApp::setupAssets()
 
 void ofApp::setupMainMenu()
 {
+    framesInCircle = 0;
     gameState = mainMenu;
     circles.clear();
-    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, (154, 60, 201), 0));
+    ofColor purple(154, 60, 201);
+    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, purple, 0));
+}
+
+void ofApp::setupEndScreen()
+{
+    framesInCircle = 0;
+    gameState = endScreen;
+    circles.clear();
+    ofColor white(255, 255, 255);
+    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() / 2, 300, white, 0));
+    ofLog() << "setupEndScreen " << circles.size();
 }
 //--------------------------------------------------------------
 void ofApp::update()
@@ -124,9 +141,34 @@ void ofApp::update()
     {
         ofApp::updateMainMenu();
     }
+    else if (gameState == endScreen)
+    {
+        ofApp::updateEndScreen();
+    }
 }
 
-int framesInCircle = 0;
+void ofApp::updateEndScreen()
+{
+    auto blobs = ofApp::findBlobs();
+    for (int i = 0; i < blobs.size(); i++)
+    {
+        ofLog() << "update " << circles.size();
+        if (circles.size() > 0 && blobs[i].at(0) >= 0 && blobs[i].at(1) >= 0)
+        {
+            ofLog() << "update " << circles.size();
+            if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
+            {
+                ofLog() << "update 2 " << circles.size();
+                framesInCircle++;
+                if (framesInCircle >= waitTime)
+                {
+                    setupMainMenu();
+                }
+            }
+        }
+    }
+}
+
 void ofApp::updateMainMenu()
 {
     auto blobs = ofApp::findBlobs();
@@ -136,7 +178,11 @@ void ofApp::updateMainMenu()
         {
             if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
             {
-                startGame();
+                framesInCircle++;
+                if (framesInCircle >= waitTime)
+                {
+                    startGame();
+                }
             }
         }
     }
@@ -249,6 +295,8 @@ std::vector<vector<float>> ofApp::findBlobs()
         if (noKinect)
         {
             blobs.push_back({myMouseX, myMouseY});
+            myMouseX = -1;
+            myMouseY = -1;
             break;
         }
 
@@ -317,7 +365,6 @@ void ofApp::drawEndScreen()
         outroPlaying = true;
     }
     newRound = false;
-    circles.clear();
     ofBackground(0, 0, 100); // blue
     int highscore = getHighScoreFromFile();
 
@@ -342,6 +389,7 @@ void ofApp::drawEndScreen()
     }
 
     headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
+    drawCircles();
 }
 
 void ofApp::drawMainMenu()
@@ -355,6 +403,7 @@ void ofApp::drawGameLoop()
     if (rounds > roundAmount)
     { // game is over
         gameState = endScreen;
+        setupEndScreen();
     }
     else
     {
@@ -435,9 +484,13 @@ void ofApp::drawKinectImages()
 }
 
 void ofApp::drawCircles()
-{
+{if (gameState == endScreen)
+        {
+            ofLog() << "drawCircles " << circles.size();
+        }
     for (const Circle &circle : circles)
     {
+        
         ofSetColor(circle.color);
         ofDrawCircle(circle.x, circle.y, circle.radius);
 

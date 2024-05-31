@@ -43,7 +43,9 @@ public:
     void setupKinect();
     void setupAssets();
     void setupMainMenu();
+    void setupEndScreen();
     void startGame();
+    void updateEndScreen();
     void updateMainMenu();
     void updateCircles();
     void updateKinect();
