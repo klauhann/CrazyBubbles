@@ -91,8 +91,9 @@ void ofApp::setupKinect()
 void ofApp::setupAssets()
 {
     // load assets
+    title.load("assets/RammettoOne.ttf", 110);
     font.load("assets/impact.ttf", 50);
-    headerFont.load("assets/impact.ttf", 100);
+    headerFont.load("assets/RammettoOne.ttf", 80);
 
     correct.load("assets/correct.wav");
     correct.setLoop(false);
@@ -109,15 +110,24 @@ void ofApp::setupAssets()
 
 void ofApp::setupMainMenu()
 {
+    background.setVolume(1);
     framesInCircle = 0;
     gameState = mainMenu;
     circles.clear();
     ofColor purple(154, 60, 201);
-    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, purple, 0));
-    for (int i = 2; i <= 8; i++)
-    {
+    circles.push_back(Circle((ofGetWidth()-200) / 2, ofGetHeight() / 2 - 100, 400, purple, -2));
+
+    int numCircles = 8;
+    float circleDiameter = 200; 
+    float spacing = 50; 
+    float totalWidth = numCircles * circleDiameter + (numCircles - 1) * spacing;
+    float startX = (ofGetWidth() - totalWidth) / 2;
+
+    for (int i = 0; i < numCircles; i++) {
         ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
-        circles.push_back(Circle((i-1) * (200 + 5), ofGetHeight() / 2 + 300, 70, randomColor, i));
+        float x = startX + i * (circleDiameter + spacing);
+        float y = ofGetHeight() - 200;
+        circles.push_back(Circle(x, y, circleDiameter / 2, randomColor, i + 1));
     }
 }
 
@@ -126,8 +136,8 @@ void ofApp::setupEndScreen()
     framesInCircle = 0;
     gameState = endScreen;
     circles.clear();
-    ofColor white(255, 255, 255);
-    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() / 2, 300, white, 0));
+    ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() - 400, 300, randomColor, 0));
 }
 //--------------------------------------------------------------
 void ofApp::update()
@@ -367,7 +377,7 @@ void ofApp::drawEndScreen()
 {
     if (!outroPlaying)
     {
-        background.stop();
+        background.setVolume(0.2);
         outro.play();
         outroPlaying = true;
     }
@@ -392,17 +402,20 @@ void ofApp::drawEndScreen()
     }
     else
     {
+        ofSetColor(255);
         font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
     }
 
+    ofSetColor(255);
     headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
     drawCircles();
 }
 
 void ofApp::drawMainMenu()
 {
-    headerFont.drawString("Start Game", ofGetWidth() / 2, ofGetHeight() / 2);
-    font.drawString(("Amount of players: " + amountOfPlayers), ofGetWidth() / 2 - 200, ofGetHeight() / 2 + 200);
+    ofSetColor(255, 255, 255);
+    title.drawString("Welcome to Crazy Bubbles!", 80, 250);
+    font.drawString(("Amount of players: " + std::to_string(amountOfPlayers)), ofGetWidth() / 2 - 350, ofGetHeight() - 400);
     drawCircles();
 }
 
@@ -410,7 +423,6 @@ void ofApp::drawGameLoop()
 {
     if (rounds > roundAmount)
     { // game is over
-        gameState = endScreen;
         setupEndScreen();
     }
     else
@@ -504,6 +516,11 @@ void ofApp::drawCircles()
         {
             font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
         }
+        else if (circle.expectedAmount == -2) {
+            ofSetColor(255);
+            headerFont.drawString("Start", circle.x - 170, circle.y-20);
+            headerFont.drawString("Game", circle.x - 190, circle.y+100);
+        }
         // font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
         // font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
     }
@@ -561,6 +578,9 @@ int ofApp::getHighScoreFromFile()
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
+    if (key == 'p') {
+        setupEndScreen();
+    }
 }
 
 //--------------------------------------------------------------

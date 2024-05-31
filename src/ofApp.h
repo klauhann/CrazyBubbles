@@ -60,6 +60,7 @@ public:
     void setupNewRound();
 
     //fonts
+    ofTrueTypeFont title;
     ofTrueTypeFont font;
     ofTrueTypeFont headerFont;
 
