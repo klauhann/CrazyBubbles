@@ -536,7 +536,8 @@ void ofApp::exit()
 //--------------------------------------------------------------
 void ofApp::writeToFile(int score)
 {
-    std::string filePath = ofToDataPath("scores.txt");
+    std::string fileName = "scores_" + std::to_string(amountOfPlayers) + ".txt";
+    std::string filePath = ofToDataPath(fileName);
     std::ofstream outputFile(filePath, std::ios::app);
 
     if (outputFile.is_open())
@@ -552,7 +553,13 @@ void ofApp::writeToFile(int score)
 
 int ofApp::getHighScoreFromFile()
 {
-    std::string filePath = ofToDataPath("scores.txt");
+    std::string fileName = "scores_" + std::to_string(amountOfPlayers) + ".txt";
+    std::string filePath = ofToDataPath(fileName);
+
+    // Prüfe, ob die Datei existiert, und erstelle sie, falls nicht
+    std::ofstream outputFile(filePath, std::ios::app); // Öffnen im Anhängemodus erstellt die Datei, wenn sie nicht existiert
+    outputFile.close(); // Sofort wieder schließen
+
     std::ifstream inputFile(filePath);
     int highscore = 0;
 
@@ -561,9 +568,18 @@ int ofApp::getHighScoreFromFile()
         std::string line;
         while (std::getline(inputFile, line))
         {
-            if (stoi(line) > highscore)
-            {
-                highscore = stoi(line);
+            try {
+                int score = std::stoi(line);
+                if (score > highscore)
+                {
+                    highscore = score;
+                }
+            }
+            catch (const std::invalid_argument&) {
+                ofLogError() << "Ungueltige Zeile in der Datei: " << line;
+            }
+            catch (const std::out_of_range&) {
+                ofLogError() << "Wert ausserhalb des gueltigen Bereichs in der Datei: " << line;
             }
         }
         inputFile.close();
