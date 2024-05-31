@@ -1,20 +1,19 @@
 #include "ofApp.h"
 #include <iostream>
 
-
-//setup
+// setup
 int amountOfPlayers = 4;
-const int roundAmount = 2; 
-const int roundTime = 4; //in seconds
+const int roundAmount = 2;
+const int roundTime = 4; // in seconds
 
 const int nearThreshold = 205;
 const int farThreshold = 175;
 const float minBlobSize = 800;
 const float maxBlobSize = 20000.0;
 const bool drawKinect = false;
-const bool noKinect = true; //set this to true if testing without a kinect (and test with mouse clicks)
+const bool noKinect = true; // set this to true if testing without a kinect (and test with mouse clicks)
 
-//global variables
+// global variables
 int amountCorrect = 0;
 int frame = 0;
 std::chrono::seconds duration(roundTime);
@@ -32,7 +31,8 @@ float myMouseY = -1;
 vector<Circle> menuCircles;
 
 //--------------------------------------------------------------
-void ofApp::setup() {
+void ofApp::setup()
+{
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     setupKinect();
@@ -40,14 +40,16 @@ void ofApp::setup() {
     setupMainMenu();
 }
 
-void ofApp::startGame() {
+void ofApp::startGame()
+{
     circles.clear();
     amountCorrect = 0;
     frame = 0;
     score = 0;
     amountOfCircles = 0;
     rounds = 1;
-    if (noKinect) {
+    if (noKinect)
+    {
         amountOfPlayers = 1;
     }
     numberOfPeople = amountOfPlayers;
@@ -56,14 +58,16 @@ void ofApp::startGame() {
     startTime = std::chrono::steady_clock::now();
 }
 
-void ofApp::setupKinect() {
+void ofApp::setupKinect()
+{
     // enable depth->video image calibration
     kinect.setRegistration(true);
     kinect.init();
     kinect.open();
 
     // print the intrinsic IR sensor values
-    if (kinect.isConnected()) {
+    if (kinect.isConnected())
+    {
         ofLogNotice() << "sensor-emitter dist: " << kinect.getSensorEmitterDistance() << "cm";
         ofLogNotice() << "sensor-camera dist:  " << kinect.getSensorCameraDistance() << "cm";
         ofLogNotice() << "zero plane pixel size: " << kinect.getZeroPlanePixelSize() << "mm";
@@ -82,8 +86,9 @@ void ofApp::setupKinect() {
     kinect.setCameraTiltAngle(angle);
 }
 
-void ofApp::setupAssets() {
-    //load assets
+void ofApp::setupAssets()
+{
+    // load assets
     font.load("impact.ttf", 50);
     headerFont.load("impact.ttf", 100);
 
@@ -100,46 +105,58 @@ void ofApp::setupAssets() {
     ofSeedRandom();
 }
 
-void ofApp::setupMainMenu() {
+void ofApp::setupMainMenu()
+{
     gameState = mainMenu;
     circles.clear();
-    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, (154, 60, 201), 100));
+    circles.push_back(Circle(ofGetWidth() / 2 - 200, ofGetHeight() / 2, 400, (154, 60, 201), 0));
 }
 //--------------------------------------------------------------
-void ofApp::update() {
-    if (gameState == gameLoop) {
+void ofApp::update()
+{
+    if (gameState == gameLoop)
+    {
         ofApp::updateCircles();
         ofApp::updateKinect();
         ofApp::updateContours();
     }
-    else if (gameState == mainMenu) {
+    else if (gameState == mainMenu)
+    {
         ofApp::updateMainMenu();
     }
 }
 
 int framesInCircle = 0;
-void ofApp::updateMainMenu() {
+void ofApp::updateMainMenu()
+{
     auto blobs = ofApp::findBlobs();
-    for (int i = 0; i < blobs.size(); i++) {
-        if(isPointInCircle())
+    for (int i = 0; i < blobs.size(); i++)
+    {
+        if (circles.size() > 0 && blobs[i].at(0) >= 0 && blobs[i].at(1) >= 0)
+        {
+            if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
+            {
+                startGame();
+            }
+        }
     }
-
 }
 
-void ofApp::updateContours() {
+void ofApp::updateContours()
+{
     auto blobs = ofApp::findBlobs();
-    for (int i = 0; i < blobs.size(); i++) {
+    for (int i = 0; i < blobs.size(); i++)
+    {
         vector<float> coordinates = blobs[i];
-        if (coordinates.at(0) >= 0) {
-            for (Circle& circle : circles) {
-                float xStartCircle = circle.x - circle.radius;
-                float yStartCircle = circle.y - circle.radius;
-                float xEndCircle = circle.x + circle.radius;
-                float yEndCircle = circle.y + circle.radius;
-
-                if (isPointInCircle(coordinates.at(0), coordinates.at(1), circle.x, circle.y, circle.radius)) {
+        if (coordinates.at(0) >= 0)
+        {
+            for (Circle &circle : circles)
+            {
+                if (isPointInCircle(coordinates.at(0), coordinates.at(1), circle.x, circle.y, circle.radius))
+                {
                     circle.currentAmount++;
-                    if (circle.expectedAmount == circle.currentAmount) {
+                    if (circle.expectedAmount == circle.currentAmount)
+                    {
                         amountCorrect++;
                     }
                 }
@@ -148,16 +165,19 @@ void ofApp::updateContours() {
     }
 }
 
-bool ofApp::isPointInCircle(double x, double y, double x_center, double y_center, double radius) {
+bool ofApp::isPointInCircle(double x, double y, double x_center, double y_center, double radius)
+{
     double distance = sqrt(pow(x - x_center, 2) + pow(y - y_center, 2));
     return distance <= radius;
 }
 
-void ofApp::updateKinect() {
+void ofApp::updateKinect()
+{
     kinect.update();
 
     // there is a new frame and we are connected
-    if (kinect.isFrameNew()) {
+    if (kinect.isFrameNew())
+    {
 
         // load grayscale depth image from the kinect source
         grayImage.setFromPixels(kinect.getDepthPixels());
@@ -179,10 +199,13 @@ void ofApp::updateKinect() {
     }
 }
 
-void ofApp::updateCircles() {
-    if (newRound) {
+void ofApp::updateCircles()
+{
+    if (newRound)
+    {
         newRound = false;
-        while (numberOfPeople > 0) {
+        while (numberOfPeople > 0)
+        {
             int thisCircle = ofRandom(1, numberOfPeople + 1);
             float new_radius = ofRandom(150 + 100 * thisCircle, 200 + 100 * thisCircle);
             float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
@@ -191,40 +214,49 @@ void ofApp::updateCircles() {
 
             bool overlaps = false;
 
-            for (const Circle& circle : circles) {
+            for (const Circle &circle : circles)
+            {
                 float distance = ofDist(new_x, new_y, circle.x, circle.y);
-                if (distance < new_radius + circle.radius + 20) {
+                if (distance < new_radius + circle.radius + 20)
+                {
                     overlaps = true;
                     break;
                 }
             }
 
-            if (!overlaps) {
+            if (!overlaps)
+            {
                 numberOfPeople -= thisCircle;
                 circles.push_back(Circle(new_x, new_y, new_radius, randomColor, thisCircle));
-               
             }
         }
         amountOfCircles = circles.size();
     }
 }
 
-std::vector<vector<float>> ofApp::findBlobs() {
-    vector<vector<float>> blobs;
+std::vector<vector<float>> ofApp::findBlobs()
+{
+    vector<vector<float>> blobs = {};
 
-    if (noKinect) {
+    if (noKinect)
+    {
         contourFinder.nBlobs = 1;
     }
-    for (int i = 0; i < contourFinder.nBlobs; i++) {
-        if (noKinect) {
-            blobs.push_back({ myMouseX, myMouseY });
+    // Loop through all contours found
+    // Get the current contour
+    for (int i = 0; i < contourFinder.nBlobs; i++)
+    {
+        if (noKinect)
+        {
+            blobs.push_back({myMouseX, myMouseY});
+            break;
         }
-        // Loop through all contours found
-        // Get the current contour
+
         ofxCvBlob blob = contourFinder.blobs[i];
         float blobSize = blob.area;
 
-        if (blobSize >= minBlobSize && blobSize <= maxBlobSize) {
+        if (blobSize >= minBlobSize && blobSize <= maxBlobSize)
+        {
             ofPoint centroid = blob.centroid;
 
             // Transfrom blobs based on beamer size and angle
@@ -234,16 +266,18 @@ std::vector<vector<float>> ofApp::findBlobs() {
             blobX *= 1.4;
             blobY *= 1.55;
 
-            blobs.push_back({ blobX, blobY });
+            blobs.push_back({blobX, blobY});
         }
-        else {
-            blobs.push_back({ -1,-1 });
+        else
+        {
+            blobs.push_back({-1, -1});
         }
     }
     return blobs;
 }
 
-void ofApp::setupNewRound() {
+void ofApp::setupNewRound()
+{
     frame = ofGetFrameNum();
     circles.clear();
     newRound = true;
@@ -257,86 +291,98 @@ bool outroPlaying = false;
 bool scoreWritten = false;
 bool newHighscore = false;
 //--------------------------------------------------------------
-void ofApp::draw() {
+void ofApp::draw()
+{
     ofBackground(0, 0, 0);
-    if (gameState == gameLoop) {
+    if (gameState == gameLoop)
+    {
         drawGameLoop();
     }
-    else if (gameState == mainMenu) {
+    else if (gameState == mainMenu)
+    {
         drawMainMenu();
     }
-    else if (gameState == endScreen) {
+    else if (gameState == endScreen)
+    {
         drawEndScreen();
     }
 }
 
-void ofApp::drawEndScreen() {
-    if (!outroPlaying) {
+void ofApp::drawEndScreen()
+{
+    if (!outroPlaying)
+    {
         background.stop();
         outro.play();
         outroPlaying = true;
     }
     newRound = false;
     circles.clear();
-    ofBackground(0, 0, 100); //blue
+    ofBackground(0, 0, 100); // blue
     int highscore = getHighScoreFromFile();
 
-    if (!scoreWritten) {
-        if (score > highscore) {
+    if (!scoreWritten)
+    {
+        if (score > highscore)
+        {
             newHighscore = true;
         }
         writeToFile(score);
         scoreWritten = true;
     }
 
-    if (newHighscore) {
+    if (newHighscore)
+    {
         ofSetColor(255);
         headerFont.drawString("New Highscore!", ofGetWidth() / 2 - 450, ofGetHeight() / 2 - 200);
     }
-    else {
+    else
+    {
         font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
     }
 
     headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
 }
 
-
-void ofApp::drawMainMenu() {
+void ofApp::drawMainMenu()
+{
     headerFont.drawString("Start Game", ofGetWidth() / 2, ofGetHeight() / 2);
-    Circle circle = Circle(ofGetWidth() / 2, ofGetHeight() / 2 + 400, 300, (ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255)), 0);
-    ofDrawCircle(circle.x, circle.y, circle.radius);
-
-    if (isPointInCircle(myMouseX, myMouseY, circle.x, circle.y, circle.radius) == true) {
-        startGame();
-    }
+    drawCircles();
 }
 
-void ofApp::drawGameLoop() {
-    if (rounds > roundAmount) { // game is over
+void ofApp::drawGameLoop()
+{
+    if (rounds > roundAmount)
+    { // game is over
         gameState = endScreen;
     }
-    else {
+    else
+    {
         auto current_time = std::chrono::steady_clock::now();
         auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - startTime).count();
 
-        if (ofGetFrameNum() == frame + 1 && ofGetFrameNum() > 1) { //frame after a new round
+        if (ofGetFrameNum() == frame + 1 && ofGetFrameNum() > 1)
+        { // frame after a new round
             ofSleepMillis(2000);
             background.setVolume(1);
             startTime = std::chrono::steady_clock::now();
             rounds++;
         }
-        else if (amountCorrect == amountOfCircles && amountOfCircles != 0) {
+        else if (amountCorrect == amountOfCircles && amountOfCircles != 0)
+        {
             score += 50 * (duration.count() - elapsed_time);
             setupNewRound();
             ofBackground(0, 255, 0);
             correct.play();
         }
-        else if (elapsed_time >= duration.count()) {
+        else if (elapsed_time >= duration.count())
+        {
             setupNewRound();
             ofBackground(255, 0, 0);
             incorrect.play();
         }
-        else {
+        else
+        {
             ofBackground(0, 0, 0);
             ofApp::drawCircles();
 
@@ -347,26 +393,31 @@ void ofApp::drawGameLoop() {
             font.drawString("Round: " + ofToString(rounds), ofGetWidth() - 300, 300);
 
             // draw blobs
-            for (int i = 0; i < contourFinder.nBlobs; i++) {
-                vector<float> blobCoordinates = ofApp::findBlobs(i);
-
-                if (blobCoordinates.at(0) >= 0) {
+            vector<vector<float>> blobs = ofApp::findBlobs();
+            for (int i = 0; i < blobs.size(); i++)
+            {
+                vector<float> blobCoordinates = blobs[i];
+                if (blobCoordinates.at(0) >= 0)
+                {
                     ofColor white(255, 255, 255);
                     ofSetColor(white);
                     ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
                 }
             }
-            for (Circle& circle : circles) {
+            for (Circle &circle : circles)
+            {
                 circle.currentAmount = 0;
             }
             amountCorrect = 0;
         }
-        if (noKinect) {
+        if (noKinect)
+        {
             myMouseX = -1.0;
             myMouseY = -1.0;
         }
 
-        if (drawKinect) {
+        if (drawKinect)
+        {
             void drawKinectImages();
         }
     }
@@ -383,74 +434,85 @@ void ofApp::drawKinectImages()
     contourFinder.draw(10, 320, 400, 300);
 }
 
-void ofApp::drawCircles() {
-    for (const Circle& circle : circles) {
+void ofApp::drawCircles()
+{
+    for (const Circle &circle : circles)
+    {
         ofSetColor(circle.color);
         ofDrawCircle(circle.x, circle.y, circle.radius);
 
         ofSetColor(0);
-        font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
-        //font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
-        //font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
+        if (circle.expectedAmount > 0)
+        {
+            font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
+        }
+        // font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
+        // font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
     }
 }
 
-
 //--------------------------------------------------------------
-void ofApp::exit() {
+void ofApp::exit()
+{
     kinect.setCameraTiltAngle(0); // zero the tilt on exit
     kinect.close();
 }
 
 //--------------------------------------------------------------
-void ofApp::writeToFile(int score) {
+void ofApp::writeToFile(int score)
+{
     std::string filePath = ofToDataPath("scores.txt");
     std::ofstream outputFile(filePath, std::ios::app);
 
-    if (outputFile.is_open()) {
+    if (outputFile.is_open())
+    {
         outputFile << to_string(score) << std::endl;
         outputFile.close();
     }
-    else {
-        ofLogError() << "Fehler beim �ffnen der Datei zum Schreiben.";
+    else
+    {
+        ofLogError() << "Fehler beim oeffnen der Datei zum Schreiben.";
     }
 }
 
-int ofApp::getHighScoreFromFile() {
+int ofApp::getHighScoreFromFile()
+{
     std::string filePath = ofToDataPath("scores.txt");
     std::ifstream inputFile(filePath);
     int highscore = 0;
 
-    if (inputFile.is_open()) {
+    if (inputFile.is_open())
+    {
         std::string line;
-        while (std::getline(inputFile, line)) {
-            if (stoi(line) > highscore) {
+        while (std::getline(inputFile, line))
+        {
+            if (stoi(line) > highscore)
+            {
                 highscore = stoi(line);
             }
         }
         inputFile.close();
     }
-    else {
-        ofLogError() << "Fehler beim �ffnen der Datei zum Lesen.";
+    else
+    {
+        ofLogError() << "Fehler beim oeffnen der Datei zum Lesen.";
     }
     return highscore;
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key) {
-
+void ofApp::keyPressed(int key)
+{
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button)
 {
-
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button)
 {
-
 }
 
 //--------------------------------------------------------------
@@ -461,17 +523,16 @@ void ofApp::mouseReleased(int x, int y, int button)
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y) {
-
+void ofApp::mouseEntered(int x, int y)
+{
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y) {
-
+void ofApp::mouseExited(int x, int y)
+{
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h)
 {
-
 }

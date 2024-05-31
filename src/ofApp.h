@@ -4,6 +4,7 @@
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
 #include "ofxGui.h"
+#include "ofxCvBlob.h"
 
 #include <vector>
 #include <cmath>
