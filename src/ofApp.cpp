@@ -3,7 +3,7 @@
 
 // setup
 int amountOfPlayers = 4;
-const int roundAmount = 4;
+const int roundAmount = 5;
 const int roundTime = 3; // in seconds
 int waitTime = 60;       // time to stay in circle before game starts (in frames)
 
@@ -12,7 +12,7 @@ const int farThreshold = 175;
 const float minBlobSize = 800;
 const float maxBlobSize = 20000.0;
 const bool drawKinect = false;
-const bool noKinect = true; // set this to true if testing without a kinect (and test with mouse clicks)
+const bool noKinect = false; // set this to true if testing without a kinect (and test with mouse clicks)
 
 // global variables
 int amountCorrect = 0;
