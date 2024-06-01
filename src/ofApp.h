@@ -56,6 +56,7 @@ public:
     void drawEndScreen();
     void drawCircles();
     std::vector<std::vector<float>> findBlobs();
+    ofColor generateRandomColor(float minBrightness, float maxBrightness);
     bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
     void setupNewRound();
 

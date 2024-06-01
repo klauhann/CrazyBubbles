@@ -3,9 +3,9 @@
 
 // setup
 int amountOfPlayers = 4;
-const int roundAmount = 2;
-const int roundTime = 4; // in seconds
-int waitTime = 60;       // time to stay in circle before game starts in frames
+const int roundAmount = 4;
+const int roundTime = 3; // in seconds
+int waitTime = 60;       // time to stay in circle before game starts (in frames)
 
 const int nearThreshold = 205;
 const int farThreshold = 175;
@@ -30,6 +30,8 @@ float myMouseX = -1;
 float myMouseY = -1;
 
 int framesInCircle = 0;
+
+bool newHighscore = false;
 
 //--------------------------------------------------------------
 void ofApp::setup()
@@ -114,17 +116,17 @@ void ofApp::setupMainMenu()
     framesInCircle = 0;
     gameState = mainMenu;
     circles.clear();
-    ofColor purple(154, 60, 201);
-    circles.push_back(Circle((ofGetWidth()-200) / 2, ofGetHeight() / 2 - 100, 400, purple, -2));
+    ofColor bigCircleColor = generateRandomColor(100, 200);
+    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() / 2 - 100, 400, bigCircleColor, -2));
 
     int numCircles = 8;
-    float circleDiameter = 200; 
-    float spacing = 50; 
-    float totalWidth = numCircles * circleDiameter + (numCircles - 1) * spacing;
+    float circleDiameter = 200;
+    float spacing = 50;
+    float totalWidth = numCircles * circleDiameter + (numCircles - 3) * spacing;
     float startX = (ofGetWidth() - totalWidth) / 2;
 
     for (int i = 0; i < numCircles; i++) {
-        ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+        ofColor randomColor = generateRandomColor(200, 255);
         float x = startX + i * (circleDiameter + spacing);
         float y = ofGetHeight() - 200;
         circles.push_back(Circle(x, y, circleDiameter / 2, randomColor, i + 1));
@@ -133,11 +135,20 @@ void ofApp::setupMainMenu()
 
 void ofApp::setupEndScreen()
 {
+    newHighscore = false;
+    background.setVolume(0.2);
+    outro.play();
     framesInCircle = 0;
     gameState = endScreen;
     circles.clear();
-    ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
-    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() - 400, 300, randomColor, 0));
+    ofColor randomColor = generateRandomColor(100, 200);
+    circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() - 650, 360, randomColor, -3));
+    int highscore = getHighScoreFromFile();
+    if (score > highscore)
+    {
+        newHighscore = true;
+    }
+    writeToFile(score);
 }
 //--------------------------------------------------------------
 void ofApp::update()
@@ -273,7 +284,7 @@ void ofApp::updateCircles()
             float new_radius = ofRandom(150 + 100 * thisCircle, 200 + 100 * thisCircle);
             float new_x = ofRandom(new_radius + 20, ofGetWidth() - (new_radius + 20));
             float new_y = ofRandom(new_radius + 20, ofGetHeight() - (new_radius + 20));
-            ofColor randomColor(ofRandom(100, 255), ofRandom(100, 255), ofRandom(100, 255));
+            ofColor randomColor = generateRandomColor(200, 255);
 
             bool overlaps = false;
 
@@ -341,6 +352,13 @@ std::vector<vector<float>> ofApp::findBlobs()
     return blobs;
 }
 
+ofColor ofApp::generateRandomColor(float minBrightness, float maxBrightness) {
+    float hue = ofRandom(0, 255);
+    float saturation = ofRandom(100, 255);
+    float brightness = ofRandom(minBrightness, maxBrightness);
+    return ofColor::fromHsb(hue, saturation, brightness);
+}
+
 void ofApp::setupNewRound()
 {
     frame = ofGetFrameNum();
@@ -350,11 +368,9 @@ void ofApp::setupNewRound()
     amountCorrect = 0;
     background.setVolume(0.2);
     numberOfPeople = amountOfPlayers;
+    newHighscore = false;
 }
 
-bool outroPlaying = false;
-bool scoreWritten = false;
-bool newHighscore = false;
 //--------------------------------------------------------------
 void ofApp::draw()
 {
@@ -375,47 +391,39 @@ void ofApp::draw()
 
 void ofApp::drawEndScreen()
 {
-    if (!outroPlaying)
-    {
-        background.setVolume(0.2);
-        outro.play();
-        outroPlaying = true;
-    }
     newRound = false;
-    ofBackground(0, 0, 100); // blue
-    int highscore = getHighScoreFromFile();
-
-    if (!scoreWritten)
-    {
-        if (score > highscore)
-        {
-            newHighscore = true;
-        }
-        writeToFile(score);
-        scoreWritten = true;
-    }
+    std::string highscoreText = "";
 
     if (newHighscore)
     {
-        ofSetColor(255);
-        headerFont.drawString("New Highscore!", ofGetWidth() / 2 - 450, ofGetHeight() / 2 - 200);
+        highscoreText = "New Highscore!";
     }
     else
     {
-        ofSetColor(255);
-        font.drawString("Highscore: " + ofToString(highscore), ofGetWidth() / 2 - 225, ofGetHeight() / 2 + 150);
+        highscoreText = "Highscore: " + ofToString(highscore);
     }
 
     ofSetColor(255);
-    headerFont.drawString("Score: " + ofToString(score), ofGetWidth() / 2 - 300, ofGetHeight() / 2);
+
+    std::string scoreText = "Your score: " + ofToString(score);
+    ofRectangle boundingBox = title.getStringBoundingBox(scoreText, 0, 0);
+    title.drawString(scoreText, (ofGetWidth() - boundingBox.width) / 2, 500);
+
+    boundingBox = headerFont.getStringBoundingBox(highscoreText, 0, 0);
+    headerFont.drawString(highscoreText, (ofGetWidth()-boundingBox.width) / 2, 700);
     drawCircles();
 }
 
 void ofApp::drawMainMenu()
 {
     ofSetColor(255, 255, 255);
-    title.drawString("Welcome to Crazy Bubbles!", 80, 250);
-    font.drawString(("Amount of players: " + std::to_string(amountOfPlayers)), ofGetWidth() / 2 - 350, ofGetHeight() - 400);
+    std::string text = "Welcome to Crazy Bubbles!";
+    ofRectangle boundingBox = title.getStringBoundingBox(text, 0, 0);
+    title.drawString(text, (ofGetWidth() - boundingBox.width) / 2, 250);
+
+    text = "Amount of players: " + ofToString(amountOfPlayers);
+    boundingBox = font.getStringBoundingBox(text, 0, 0);
+    font.drawString(text, (ofGetWidth() - boundingBox.width) / 2, ofGetHeight() - 400);
     drawCircles();
 }
 
@@ -507,22 +515,35 @@ void ofApp::drawCircles()
 {
     for (const Circle &circle : circles)
     {
-
         ofSetColor(circle.color);
         ofDrawCircle(circle.x, circle.y, circle.radius);
 
-        ofSetColor(0);
         if (circle.expectedAmount > 0)
         {
-            font.drawString(ofToString(circle.expectedAmount), circle.x - 15, circle.y + 25);
+            ofSetColor(0);
+            std::string circleText = ofToString(circle.expectedAmount);
+            ofRectangle boundingBox = font.getStringBoundingBox(circleText, 0, 0);
+            font.drawString(circleText, circle.x - boundingBox.width / 2, circle.y + boundingBox.height / 2);
         }
-        else if (circle.expectedAmount == -2) {
+        else 
+        {
+            vector<std::string> texts = {};
+            if (circle.expectedAmount == -2) {
+                texts.push_back("Start");
+                texts.push_back("Game");
+            }
+            else if (circle.expectedAmount == -3) {
+                texts.push_back("Play");
+                texts.push_back("again");
+            }
+
             ofSetColor(255);
-            headerFont.drawString("Start", circle.x - 170, circle.y-20);
-            headerFont.drawString("Game", circle.x - 190, circle.y+100);
+            for (int i = 0; i < texts.size(); i++)
+            {
+                ofRectangle boundingBox = headerFont.getStringBoundingBox(texts[i], 0, 0);
+                headerFont.drawString(texts[i], circle.x - boundingBox.width / 2,(circle.y - 80) + (i*150) + boundingBox.height / 2);
+            }
         }
-        // font.drawString(ofToString(circle.currentAmount), circle.x - 15, circle.y - 30);
-        // font.drawString(ofToString(amountCorrect), circle.x - 15, circle.y - 80);
     }
 }
 
@@ -534,10 +555,10 @@ void ofApp::exit()
 }
 
 //--------------------------------------------------------------
+
 void ofApp::writeToFile(int score)
 {
-    std::string fileName = "scores_" + std::to_string(amountOfPlayers) + ".txt";
-    std::string filePath = ofToDataPath(fileName);
+    std::string filePath = ofToDataPath("scores_" + std::to_string(amountOfPlayers) + "_" + std::to_string(roundAmount) + ".txt");
     std::ofstream outputFile(filePath, std::ios::app);
 
     if (outputFile.is_open())
@@ -553,9 +574,7 @@ void ofApp::writeToFile(int score)
 
 int ofApp::getHighScoreFromFile()
 {
-    std::string fileName = "scores_" + std::to_string(amountOfPlayers) + ".txt";
-    std::string filePath = ofToDataPath(fileName);
-
+    std::string filePath = ofToDataPath("scores_" + std::to_string(amountOfPlayers) + "_" + std::to_string(roundAmount) + ".txt");
     // Prüfe, ob die Datei existiert, und erstelle sie, falls nicht
     std::ofstream outputFile(filePath, std::ios::app); // Öffnen im Anhängemodus erstellt die Datei, wenn sie nicht existiert
     outputFile.close(); // Sofort wieder schließen
