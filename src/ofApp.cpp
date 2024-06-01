@@ -31,7 +31,7 @@ float myMouseY = -1;
 
 int framesInCircle = 0;
 
-bool newHighscore = false;
+int highscore = -1;
 
 //--------------------------------------------------------------
 void ofApp::setup()
@@ -135,7 +135,6 @@ void ofApp::setupMainMenu()
 
 void ofApp::setupEndScreen()
 {
-    newHighscore = false;
     background.setVolume(0.2);
     outro.play();
     framesInCircle = 0;
@@ -143,10 +142,10 @@ void ofApp::setupEndScreen()
     circles.clear();
     ofColor randomColor = generateRandomColor(100, 200);
     circles.push_back(Circle(ofGetWidth() / 2, ofGetHeight() - 650, 360, randomColor, -3));
-    int highscore = getHighScoreFromFile();
+    highscore = getHighScoreFromFile();
     if (score > highscore)
     {
-        newHighscore = true;
+        highscore = -1;
     }
     writeToFile(score);
 }
@@ -368,7 +367,7 @@ void ofApp::setupNewRound()
     amountCorrect = 0;
     background.setVolume(0.2);
     numberOfPeople = amountOfPlayers;
-    newHighscore = false;
+    highscore = -1;
 }
 
 //--------------------------------------------------------------
@@ -394,7 +393,7 @@ void ofApp::drawEndScreen()
     newRound = false;
     std::string highscoreText = "";
 
-    if (newHighscore)
+    if (highscore == -1)
     {
         highscoreText = "New Highscore!";
     }
@@ -575,9 +574,9 @@ void ofApp::writeToFile(int score)
 int ofApp::getHighScoreFromFile()
 {
     std::string filePath = ofToDataPath("scores_" + std::to_string(amountOfPlayers) + "_" + std::to_string(roundAmount) + ".txt");
-    // Prüfe, ob die Datei existiert, und erstelle sie, falls nicht
-    std::ofstream outputFile(filePath, std::ios::app); // Öffnen im Anhängemodus erstellt die Datei, wenn sie nicht existiert
-    outputFile.close(); // Sofort wieder schließen
+    // Prï¿½fe, ob die Datei existiert, und erstelle sie, falls nicht
+    std::ofstream outputFile(filePath, std::ios::app); // ï¿½ffnen im Anhï¿½ngemodus erstellt die Datei, wenn sie nicht existiert
+    outputFile.close(); // Sofort wieder schlieï¿½en
 
     std::ifstream inputFile(filePath);
     int highscore = 0;
