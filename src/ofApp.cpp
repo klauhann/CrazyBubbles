@@ -568,6 +568,7 @@ void ofApp::writeToFile(int score)
     else
     {
         ofLogError() << "Fehler beim oeffnen der Datei zum Schreiben.";
+
     }
 }
 
