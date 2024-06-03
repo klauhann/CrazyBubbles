@@ -3,6 +3,8 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
+#include "ofxGui.h"
+#include "ofxCvBlob.h"
 
 #include <vector>
 #include <cmath>
@@ -18,8 +20,6 @@ public:
     ofColor color;
     int expectedAmount;
     int currentAmount = 0;
-
-    void drawCircle(int amountOfPeople);
 };
 
 class ofApp : public ofBaseApp {
@@ -40,16 +40,28 @@ public:
     void writeToFile(int score);
     int getHighScoreFromFile();
 
-    void drawKinectImages();
+    void setupKinect();
+    void setupAssets();
+    void setupMainMenu();
+    void setupEndScreen();
+    void startGame();
+    void updateEndScreen();
+    void updateMainMenu();
     void updateCircles();
     void updateKinect();
     void updateContours();
+    void drawKinectImages();
+    void drawGameLoop();
+    void drawMainMenu();
+    void drawEndScreen();
     void drawCircles();
-    std::vector<float> findBlobs(int i);
+    std::vector<std::vector<float>> findBlobs();
+    ofColor generateRandomColor(float minBrightness, float maxBrightness);
     bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
     void setupNewRound();
 
     //fonts
+    ofTrueTypeFont title;
     ofTrueTypeFont font;
     ofTrueTypeFont headerFont;
 
@@ -62,6 +74,14 @@ public:
 
     //circles
     vector<Circle> circles;
+
+    enum gameStateEnum
+    {
+        mainMenu = 0,
+        gameLoop = 1,
+        endScreen = 2
+    };
+    gameStateEnum gameState = mainMenu;
 
 
     ofxKinect kinect;
