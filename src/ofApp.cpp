@@ -5,13 +5,13 @@
 int amountOfPlayers = 4;
 const int roundAmount = 5;
 const int roundTime = 3; // in seconds
-int waitTime = 60;       // time to stay in circle before game starts (in frames)
+int waitTime = 2;       // time to stay in circle before game starts (in frames)
 
-const int nearThreshold = 205;
-const int farThreshold = 175;
+const int nearThreshold = 505;
+const int farThreshold = 190;
 const float minBlobSize = 800;
 const float maxBlobSize = 20000.0;
-const bool drawKinect = false;
+const bool drawKinect = true;
 const bool noKinect = false; // set this to true if testing without a kinect (and test with mouse clicks)
 
 // global variables
@@ -53,15 +53,19 @@ void ofApp::setup()
 void ofApp::startGame()
 {
     circles.clear();
+    ofLog() << "1";
     amountCorrect = 0;
     frame = 0;
     score = 0;
     amountOfCircles = 0;
     rounds = 1;
     numberOfPeople = amountOfPlayers;
+    ofLog() << "2";
     gameState = gameLoop;
+    ofLog() << "3";
     newRound = true;
     startTime = std::chrono::steady_clock::now();
+    ofLog() << "4";
 }
 
 void ofApp::setupKinect()
@@ -154,22 +158,28 @@ void ofApp::setupEndScreen()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    ofLog() << "Update";
     if (gameState == gameLoop)
     {
+        //ofLog() << "update game loop";
         ofApp::updateCircles();
         ofApp::updateKinect();
         ofApp::updateContours();
+        //ofLog() << "update complete";
     }
     else if (gameState == mainMenu)
     {
+        //ofLog() << "update main menu";
+        ofApp::updateKinect();
         ofApp::updateMainMenu();
+        //ofLog() << "update complete";
     }
     else if (gameState == endScreen)
     {
+        //ofLog() << "update end screen";
+        ofApp::updateKinect();
         ofApp::updateEndScreen();
+        //ofLog() << "update complete";
     }
-    ofLog() << "Update complete" << endl;
 }
 
 void ofApp::updateEndScreen()
@@ -212,6 +222,7 @@ void ofApp::updateMainMenu()
                 framesInCircle++;
                 if (framesInCircle >= waitTime)
                 {
+                    ofLog() << "Starting game...";
                     startGame();
                 }
             }
@@ -272,7 +283,7 @@ void ofApp::updateKinect()
 
         // find contours which are between the size of 20 pixels and 1/3 the w*h pixels.
         // also, find holes is set to true so we will get interior contours as well....
-        contourFinder.findContours(grayImage, 10, (kinect.width * kinect.height) / 2, 20, false);
+        contourFinder.findContours(grayImage, minBlobSize, maxBlobSize, 10, false);
     }
 }
 
@@ -315,23 +326,20 @@ std::vector<vector<float>> ofApp::findBlobs()
 {
     vector<vector<float>> blobs = {};
 
+    blobs.push_back({ myMouseX, myMouseY });
+    myMouseX = -1;
+    myMouseY = -1;
+
     if (noKinect)
     {
-        contourFinder.nBlobs = 1;
+        contourFinder.nBlobs = 0;
     }
     // Loop through all contours found
     // Get the current contour
     if (contourFinder.nBlobs > 0) {
+        ofLog() << contourFinder.nBlobs << endl;
         for (int i = 0; i < contourFinder.nBlobs; i++)
         {
-            if (noKinect)
-            {
-                blobs.push_back({ myMouseX, myMouseY });
-                myMouseX = -1;
-                myMouseY = -1;
-                break;
-            }
-
             ofxCvBlob blob = contourFinder.blobs[i];
             float blobSize = blob.area;
 
@@ -348,15 +356,13 @@ std::vector<vector<float>> ofApp::findBlobs()
 
                 blobs.push_back({ blobX, blobY });
             }
-            else
-            {
-                blobs.push_back({ -1, -1 });
-            }
         }
     }
-    else
+
+    ofLog() << "blobs size: " << blobs.size();
+    for (int i = 0; i < blobs.size(); i++)
     {
-        blobs.push_back({ -1, -1 });
+        ofLog() << "blob " << i << ": x = " << blobs[i].at(0) << ", y = " << blobs[i].at(1);
     }
     return blobs;
 }
@@ -383,21 +389,30 @@ void ofApp::setupNewRound()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-    ofLog() << "Draw";
     ofBackground(0, 0, 0);
+    
     if (gameState == gameLoop)
     {
+        //ofLog() << "draw game loop";
         drawGameLoop();
+        //ofLog() << "done";
     }
     else if (gameState == mainMenu)
     {
+        //ofLog() << "draw main menu";
         drawMainMenu();
+        //ofLog() << "done";
     }
     else if (gameState == endScreen)
     {
+        //ofLog() << "draw end screen";
         drawEndScreen();
+        //ofLog() << "done";
     }
-    ofLog() << "Draw complete" << endl;
+
+    if (drawKinect) {
+        drawKinectImages();
+    }
 }
 
 void ofApp::drawEndScreen()
