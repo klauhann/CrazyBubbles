@@ -7,11 +7,7 @@ const int roundAmount = 5;
 const int roundTime = 3; // in seconds
 int waitTime = 2;       // time to stay in circle before game starts (in frames)
 
-const int nearThreshold = 505;
-const int farThreshold = 190;
-const float minBlobSize = 800;
-const float maxBlobSize = 20000.0;
-const bool drawKinect = true;
+const bool drawKinect = false;
 const bool noKinect = false; // set this to true if testing without a kinect (and test with mouse clicks)
 
 // global variables
@@ -45,6 +41,7 @@ void ofApp::setup()
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     setupKinect();
+    setupGui();
     setupAssets();
     setupMainMenu();
     ofLog() << "Setup Complete" << endl;
@@ -53,19 +50,15 @@ void ofApp::setup()
 void ofApp::startGame()
 {
     circles.clear();
-    ofLog() << "1";
     amountCorrect = 0;
     frame = 0;
     score = 0;
     amountOfCircles = 0;
     rounds = 1;
     numberOfPeople = amountOfPlayers;
-    ofLog() << "2";
     gameState = gameLoop;
-    ofLog() << "3";
     newRound = true;
     startTime = std::chrono::steady_clock::now();
-    ofLog() << "4";
 }
 
 void ofApp::setupKinect()
@@ -94,6 +87,25 @@ void ofApp::setupKinect()
     // zero the tilt on startup
     angle = 0;
     kinect.setCameraTiltAngle(angle);
+}
+
+void ofApp::setupGui()
+{
+    gui.setup();
+    gui.add(nearThreshold.setup("Near Threshold", 0, 0, 255));
+    gui.add(farThreshold.setup("Far Threshold", 255, 0, 255));
+    gui.add(minBlobSize.setup("Min Blob Size", 0, 0, 76800));
+    gui.add(maxBlobSize.setup("Max Blob Size", 76800, 0, 76800));
+
+    nearThreshold.setSize(300, 50);
+    farThreshold.setSize(300, 50);
+    minBlobSize.setSize(300, 50);
+    maxBlobSize.setSize(300, 50);
+
+    gui.setSize(400, 300);
+    ofxGuiSetFont("assets/impact.ttf", 20);
+    gui.loadFromFile("kinect_settings.json");
+
 }
 
 void ofApp::setupAssets()
@@ -158,75 +170,68 @@ void ofApp::setupEndScreen()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    updateKinect();
     if (gameState == gameLoop)
     {
         //ofLog() << "update game loop";
         ofApp::updateCircles();
-        ofApp::updateKinect();
         ofApp::updateContours();
         //ofLog() << "update complete";
     }
     else if (gameState == mainMenu)
     {
         //ofLog() << "update main menu";
-        ofApp::updateKinect();
         ofApp::updateMainMenu();
         //ofLog() << "update complete";
     }
     else if (gameState == endScreen)
     {
         //ofLog() << "update end screen";
-        ofApp::updateKinect();
         ofApp::updateEndScreen();
         //ofLog() << "update complete";
     }
+    myMouseX = -1;
+    myMouseY = -1;
 }
 
 void ofApp::updateEndScreen()
 {
-    auto blobs = ofApp::findBlobs();
-    for (int i = 0; i < blobs.size(); i++)
+    if (circles.size() > 0)
     {
-        if (circles.size() > 0 && blobs[i].at(0) >= 0 && blobs[i].at(1) >= 0)
+        if (isPointInCircle(myMouseX, myMouseY, circles[0].x, circles[0].y, circles[0].radius) == true)
         {
-            if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
+            framesInCircle++;
+            if (framesInCircle >= waitTime)
             {
-                framesInCircle++;
-                if (framesInCircle >= waitTime)
-                {
-                    setupMainMenu();
-                }
+                setupMainMenu();
             }
         }
     }
+    
 }
 
 void ofApp::updateMainMenu()
 {
-    auto blobs = ofApp::findBlobs();
-    if (circles.size() > 0 && blobs[0].at(0) >= 0 && blobs[0].at(1) >= 0)
+    if (circles.size() > 0)
     {
-        for (int i = 0; i < blobs.size(); i++)
+        for (int j = 1; j < circles.size(); j++)
         {
-            for (int j = 1; j < circles.size(); j++)
+            if (isPointInCircle(myMouseX, myMouseY, circles[j].x, circles[j].y, circles[j].radius) == true)
             {
-                if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[j].x, circles[j].y, circles[j].radius) == true)
-                {
-                    amountOfPlayers = circles[j].expectedAmount;
-                    ofLog() << "amountOfPlayers: " << amountOfPlayers;
-                }
-            }
-
-            if (isPointInCircle(blobs[i].at(0), blobs[i].at(1), circles[0].x, circles[0].y, circles[0].radius) == true)
-            {
-                framesInCircle++;
-                if (framesInCircle >= waitTime)
-                {
-                    ofLog() << "Starting game...";
-                    startGame();
-                }
+                amountOfPlayers = circles[j].expectedAmount;
+                ofLog() << "amountOfPlayers: " << amountOfPlayers;
             }
         }
+
+        if (isPointInCircle(myMouseX, myMouseY, circles[0].x, circles[0].y, circles[0].radius) == true)
+        {
+            framesInCircle++;
+            if (framesInCircle >= waitTime)
+            {
+                ofLog() << "Starting game...";
+                startGame();
+            }
+         }
     }
 }
 
@@ -327,8 +332,6 @@ std::vector<vector<float>> ofApp::findBlobs()
     vector<vector<float>> blobs = {};
 
     blobs.push_back({ myMouseX, myMouseY });
-    myMouseX = -1;
-    myMouseY = -1;
 
     if (noKinect)
     {
@@ -337,7 +340,7 @@ std::vector<vector<float>> ofApp::findBlobs()
     // Loop through all contours found
     // Get the current contour
     if (contourFinder.nBlobs > 0) {
-        ofLog() << contourFinder.nBlobs << endl;
+        ofLog() << "Amount of Blobs found: " << std::to_string(contourFinder.nBlobs);
         for (int i = 0; i < contourFinder.nBlobs; i++)
         {
             ofxCvBlob blob = contourFinder.blobs[i];
@@ -390,7 +393,7 @@ void ofApp::setupNewRound()
 void ofApp::draw()
 {
     ofBackground(0, 0, 0);
-    
+
     if (gameState == gameLoop)
     {
         //ofLog() << "draw game loop";
@@ -410,8 +413,10 @@ void ofApp::draw()
         //ofLog() << "done";
     }
 
+    drawBlobs();
     if (drawKinect) {
         drawKinectImages();
+        gui.draw();
     }
 }
 
@@ -495,33 +500,26 @@ void ofApp::drawGameLoop()
             font.drawString("Score: " + ofToString(score), ofGetWidth() - 300, 200);
             font.drawString("Round: " + ofToString(rounds), ofGetWidth() - 300, 300);
 
-            // draw blobs
-            vector<vector<float>> blobs = ofApp::findBlobs();
-            for (int i = 0; i < blobs.size(); i++)
-            {
-                vector<float> blobCoordinates = blobs[i];
-                if (blobCoordinates.at(0) >= 0)
-                {
-                    ofColor white(255, 255, 255);
-                    ofSetColor(white);
-                    ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
-                }
-            }
             for (Circle &circle : circles)
             {
                 circle.currentAmount = 0;
             }
             amountCorrect = 0;
         }
-        if (noKinect)
-        {
-            myMouseX = -1.0;
-            myMouseY = -1.0;
-        }
+    }
+}
 
-        if (drawKinect)
+void ofApp::drawBlobs()
+{
+    vector<vector<float>> blobs = ofApp::findBlobs();
+    for (int i = 0; i < blobs.size(); i++)
+    {
+        vector<float> blobCoordinates = blobs[i];
+        if (blobCoordinates.at(0) >= 0)
         {
-            void drawKinectImages();
+            ofColor white(255, 255, 255);
+            ofSetColor(white);
+            ofDrawCircle(blobCoordinates.at(0), blobCoordinates.at(1), 15);
         }
     }
 }
@@ -530,11 +528,11 @@ void ofApp::drawKinectImages()
 {
     ofSetColor(255, 255, 255);
     // draw from the live kinect
-    kinect.drawDepth(10, 10, 400, 300);
-    kinect.draw(420, 10, 400, 300);
+    kinect.drawDepth(10, 10, 800, 600);
+    kinect.draw(820, 10, 800, 600);
 
-    grayImage.draw(10, 320, 400, 300);
-    contourFinder.draw(10, 320, 400, 300);
+    grayImage.draw(10, 620, 800, 600);
+    contourFinder.draw(820, 620, 800, 600);
 }
 
 void ofApp::drawCircles()
@@ -576,8 +574,11 @@ void ofApp::drawCircles()
 //--------------------------------------------------------------
 void ofApp::exit()
 {
+    ofLog() << std::to_string(minBlobSize);
+    gui.saveToFile("kinect_settings.json");
     kinect.setCameraTiltAngle(0); // zero the tilt on exit
     kinect.close();
+    ofLog() << "Exit";
 }
 
 //--------------------------------------------------------------

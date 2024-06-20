@@ -4,6 +4,7 @@
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
 #include "ofxCvBlob.h"
+#include "ofxGui.h"
 
 #include <vector>
 #include <cmath>
@@ -39,6 +40,7 @@ public:
     void writeToFile(int score);
     int getHighScoreFromFile();
 
+    void setupGui();
     void setupKinect();
     void setupAssets();
     void setupMainMenu();
@@ -54,6 +56,7 @@ public:
     void drawMainMenu();
     void drawEndScreen();
     void drawCircles();
+    void drawBlobs();
     std::vector<std::vector<float>> findBlobs();
     ofColor generateRandomColor(float minBrightness, float maxBrightness);
     bool isPointInCircle(double x, double y, double x_center, double y_center, double radius);
@@ -99,4 +102,10 @@ public:
     // used for viewing the point cloud
     ofEasyCam easyCam;
 
+
+    ofxPanel gui;
+    ofxIntSlider nearThreshold;
+    ofxIntSlider farThreshold;
+    ofxIntSlider minBlobSize;
+    ofxIntSlider maxBlobSize;
 };
