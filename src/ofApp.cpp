@@ -7,7 +7,7 @@ const int roundAmount = 5;
 const int roundTime = 3; // in seconds
 int waitTime = 2;       // time to stay in circle before game starts (in frames)
 
-const bool drawKinect = false;
+const bool drawKinect = true;
 const bool noKinect = false; // set this to true if testing without a kinect (and test with mouse clicks)
 
 // global variables
@@ -97,12 +97,23 @@ void ofApp::setupGui()
     gui.add(minBlobSize.setup("Min Blob Size", 0, 0, 76800));
     gui.add(maxBlobSize.setup("Max Blob Size", 76800, 0, 76800));
 
-    nearThreshold.setSize(300, 50);
-    farThreshold.setSize(300, 50);
-    minBlobSize.setSize(300, 50);
-    maxBlobSize.setSize(300, 50);
+    gui.add(translateX.setup("Translate X", 0.0, -1.0 * ofGetWidth() / 2, ofGetWidth() / 2));
+    gui.add(translateY.setup("Translate Y", 0.0, -1.0 * ofGetHeight() / 2, ofGetHeight() / 2));
+    gui.add(rotateAngle.setup("Rotation Angle", 0.0, -180.0, 180.0));
+    gui.add(scaleX.setup("Scale X", 1.0, 0.5, 2.0));
+    gui.add(scaleY.setup("Scale Y", 1.0, 0.5, 2.0));
 
-    gui.setSize(400, 300);
+    nearThreshold.setSize(500, 50);
+    farThreshold.setSize(500, 50);
+    minBlobSize.setSize(500, 50);
+    maxBlobSize.setSize(500, 50);
+    translateX.setSize(500, 50);
+    translateY.setSize(500, 50);
+    rotateAngle.setSize(500, 50);
+    scaleX.setSize(500, 50);
+    scaleY.setSize(500, 50);
+
+    gui.setSize(600, 500);
     ofxGuiSetFont("assets/impact.ttf", 20);
     gui.loadFromFile("kinect_settings.json");
 
@@ -340,7 +351,7 @@ std::vector<vector<float>> ofApp::findBlobs()
     // Loop through all contours found
     // Get the current contour
     if (contourFinder.nBlobs > 0) {
-        ofLog() << "Amount of Blobs found: " << std::to_string(contourFinder.nBlobs);
+        //ofLog() << "Amount of Blobs found: " << std::to_string(contourFinder.nBlobs);
         for (int i = 0; i < contourFinder.nBlobs; i++)
         {
             ofxCvBlob blob = contourFinder.blobs[i];
@@ -354,19 +365,27 @@ std::vector<vector<float>> ofApp::findBlobs()
                 float blobX = centroid.x * (1920 / 640);
                 float blobY = centroid.y * (1080 / 480);
 
-                blobX *= 1.4;
-                blobY *= 1.55;
+                blobX *= scaleX;
+                blobY *= scaleY;
 
-                blobs.push_back({ blobX, blobY });
+
+                blobX += translateX;
+                blobY += translateY;
+
+                float finalBlobX = blobX * cos(ofDegToRad(rotateAngle)) - blobY * sin(ofDegToRad(rotateAngle));
+                float finalBlobY = blobX * sin(ofDegToRad(rotateAngle)) + blobY * cos(ofDegToRad(rotateAngle));
+
+
+                blobs.push_back({ finalBlobX, finalBlobY });
             }
         }
     }
 
-    ofLog() << "blobs size: " << blobs.size();
+    /*ofLog() << "blobs size: " << blobs.size();
     for (int i = 0; i < blobs.size(); i++)
     {
         ofLog() << "blob " << i << ": x = " << blobs[i].at(0) << ", y = " << blobs[i].at(1);
-    }
+    }*/
     return blobs;
 }
 

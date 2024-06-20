@@ -108,4 +108,10 @@ public:
     ofxIntSlider farThreshold;
     ofxIntSlider minBlobSize;
     ofxIntSlider maxBlobSize;
+
+    ofxFloatSlider translateX;
+    ofxFloatSlider translateY;
+    ofxFloatSlider rotateAngle;
+    ofxFloatSlider scaleX;
+    ofxFloatSlider scaleY;
 };
