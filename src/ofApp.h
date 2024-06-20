@@ -3,7 +3,6 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
-#include "ofxGui.h"
 #include "ofxCvBlob.h"
 
 #include <vector>

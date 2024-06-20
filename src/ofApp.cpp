@@ -36,6 +36,7 @@ int highscore = -1;
 //--------------------------------------------------------------
 void ofApp::setup()
 {
+    ofLog() << "Setup";
     if (noKinect)
     {
         waitTime = 3;
@@ -46,6 +47,7 @@ void ofApp::setup()
     setupKinect();
     setupAssets();
     setupMainMenu();
+    ofLog() << "Setup Complete" << endl;
 }
 
 void ofApp::startGame()
@@ -152,6 +154,7 @@ void ofApp::setupEndScreen()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    ofLog() << "Update";
     if (gameState == gameLoop)
     {
         ofApp::updateCircles();
@@ -166,6 +169,7 @@ void ofApp::update()
     {
         ofApp::updateEndScreen();
     }
+    ofLog() << "Update complete" << endl;
 }
 
 void ofApp::updateEndScreen()
@@ -317,36 +321,42 @@ std::vector<vector<float>> ofApp::findBlobs()
     }
     // Loop through all contours found
     // Get the current contour
-    for (int i = 0; i < contourFinder.nBlobs; i++)
+    if (contourFinder.nBlobs > 0) {
+        for (int i = 0; i < contourFinder.nBlobs; i++)
+        {
+            if (noKinect)
+            {
+                blobs.push_back({ myMouseX, myMouseY });
+                myMouseX = -1;
+                myMouseY = -1;
+                break;
+            }
+
+            ofxCvBlob blob = contourFinder.blobs[i];
+            float blobSize = blob.area;
+
+            if (blobSize >= minBlobSize && blobSize <= maxBlobSize)
+            {
+                ofPoint centroid = blob.centroid;
+
+                // Transfrom blobs based on beamer size and angle
+                float blobX = centroid.x * (1920 / 640);
+                float blobY = centroid.y * (1080 / 480);
+
+                blobX *= 1.4;
+                blobY *= 1.55;
+
+                blobs.push_back({ blobX, blobY });
+            }
+            else
+            {
+                blobs.push_back({ -1, -1 });
+            }
+        }
+    }
+    else
     {
-        if (noKinect)
-        {
-            blobs.push_back({myMouseX, myMouseY});
-            myMouseX = -1;
-            myMouseY = -1;
-            break;
-        }
-
-        ofxCvBlob blob = contourFinder.blobs[i];
-        float blobSize = blob.area;
-
-        if (blobSize >= minBlobSize && blobSize <= maxBlobSize)
-        {
-            ofPoint centroid = blob.centroid;
-
-            // Transfrom blobs based on beamer size and angle
-            float blobX = centroid.x * (1920 / 640);
-            float blobY = centroid.y * (1080 / 480);
-
-            blobX *= 1.4;
-            blobY *= 1.55;
-
-            blobs.push_back({blobX, blobY});
-        }
-        else
-        {
-            blobs.push_back({-1, -1});
-        }
+        blobs.push_back({ -1, -1 });
     }
     return blobs;
 }
@@ -373,6 +383,7 @@ void ofApp::setupNewRound()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
+    ofLog() << "Draw";
     ofBackground(0, 0, 0);
     if (gameState == gameLoop)
     {
@@ -386,6 +397,7 @@ void ofApp::draw()
     {
         drawEndScreen();
     }
+    ofLog() << "Draw complete" << endl;
 }
 
 void ofApp::drawEndScreen()
