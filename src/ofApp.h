@@ -114,4 +114,6 @@ public:
     ofxFloatSlider rotateAngle;
     ofxFloatSlider scaleX;
     ofxFloatSlider scaleY;
+
+    ofxToggle drawKinect;
 };

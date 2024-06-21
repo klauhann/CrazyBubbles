@@ -7,7 +7,7 @@ const int roundAmount = 5;
 const int roundTime = 3; // in seconds
 int waitTime = 2;       // time to stay in circle before game starts (in frames)
 
-const bool drawKinect = true;
+//const bool drawKinect = true;
 const bool noKinect = false; // set this to true if testing without a kinect (and test with mouse clicks)
 
 // global variables
@@ -102,6 +102,8 @@ void ofApp::setupGui()
     gui.add(rotateAngle.setup("Rotation Angle", 0.0, -180.0, 180.0));
     gui.add(scaleX.setup("Scale X", 1.0, 0.5, 2.0));
     gui.add(scaleY.setup("Scale Y", 1.0, 0.5, 2.0));
+
+    gui.add(drawKinect.setup("Draw Kinect", true));
 
     nearThreshold.setSize(500, 50);
     farThreshold.setSize(500, 50);
